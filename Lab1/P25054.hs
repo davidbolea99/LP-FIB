@@ -34,3 +34,23 @@ buildPalindrome xs = ((reverseList xs) ++ xs)
         reverseList :: [Int] -> [Int]
         reverseList [] = []
         reverseList (y:ys) = ((reverseList ys) ++ [y])
+
+
+-- 5. Elimina de la lista X los elementos de la lista de Y
+
+remove :: [Int] -> [Int] -> [Int]
+
+remove xs [] = xs
+remove [] ys = []
+remove (x:xs) ys
+    | (elem x ys)   = (remove xs ys)
+    | otherwise     = (++) [x] (remove xs ys)
+
+
+-- 6. Juntar un conjunto de listas en una sola lista (concat)
+
+ flatten :: [[Int]] -> [Int]
+
+ flatten (x:xs)
+    | xs == []  = x
+    | otherwise = (++) x (flatten xs)
