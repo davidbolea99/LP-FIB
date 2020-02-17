@@ -40,3 +40,21 @@ slowFib :: Int -> Int
 slowFib 0 = 0
 slowFib 1 = 1
 slowFib n = (slowFib (n-1)) + (slowFib (n-2))
+
+
+-- quickFib
+quickFib :: Int -> Int
+quickFib n = snd (fib n)
+    where
+        fib :: Int -> (Int,Int)
+        fib 0 = (0, 0)
+        fib 1 = (0, 1)
+        fib i = (f1, f1+f2)
+            where
+                (f2,f1) = fib (i-1)
+
+
+
+
+
+
