@@ -8,4 +8,4 @@ Tareas S1:
 Tareas S2 (sin recursividad):
   * [x] P93632 
   * [x] P31745
-  * [ ] P93588 (solo listas por compresion)
+  * [x] P93588 (solo listas por compresion)
