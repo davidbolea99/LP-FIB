@@ -9,3 +9,6 @@ Tareas S2 (sin recursividad):
   * [x] P93632 
   * [x] P31745
   * [x] P93588 (solo listas por compresion)
+
+Tareas S3:
+  * [x] P98957 (hasta Hammings)
