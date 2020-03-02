@@ -14,6 +14,6 @@ Problemas S3:
   * [x] P98957 (hasta Hammings)
 
 Problemas S4:
-  * [x] P80618 (size, heigth, equal, preorder, inorder, postorder, BFS)
-  * [ ] P37072
-  * [ ] P97301
+  * [x] P37072 (size, heigth, equal, preorder, inorder, postorder, BFS)
+  * [x] P80618
+  * [ ] P97301 (optional)
