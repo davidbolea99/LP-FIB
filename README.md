@@ -19,7 +19,7 @@ Problemas S4:
   * [ ] P97301 (optional)
 
 Problemas S5:
-  * [ ] P70540
+  * [x] P70540
   * [ ] P97301
   * [ ] P87974
   * [ ] P87082
