@@ -17,3 +17,9 @@ Problemas S4:
   * [x] P37072 (size, heigth, equal, preorder, inorder, postorder, BFS)
   * [x] P80618
   * [ ] P97301 (optional)
+
+Problemas S5:
+  * [ ] P70540
+  * [ ] P97301
+  * [ ] P87974
+  * [ ] P87082
