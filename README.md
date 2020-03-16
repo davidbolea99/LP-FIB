@@ -23,3 +23,6 @@ Problemas S5:
   * [x] P97301
   * [x] P87974
   * [x] P87082
+
+Problemas S6: (+practicar examenes)
+  * [x] P50086
