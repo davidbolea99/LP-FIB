@@ -22,8 +22,7 @@ data Forest a = Forest [Tree a] deriving (Show)
 
 instance Functor Forest
     where
-        --fmap _ [] = []
-        --fmap f (Forest lista) = fmap (fmap f) lista
+        fmap f (Forest lista) = Forest (map (fmap f) lista)
 
 doubleF :: Num a => Forest a -> Forest a
 doubleF forest = fmap (*2) forest

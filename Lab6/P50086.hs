@@ -49,9 +49,11 @@ queue2list (Queue s t) = s ++ (reverse t)
 instance Applicative Queue
     where
         pure x = Queue [x] [] -- Operador que coge un valor y construye una queue con ese valor dentro
-        f <*> q = Queue l []
+        (Queue fs ft) <*> (Queue es et) = Queue l []
             where
-                l = (queue2list f) <*> (queue2list q)
+                l = [funcion elemento | funcion <- listaf, elemento <- listaq]
+                listaf = fs ++ (reverse ft)
+                listaq = es ++ (reverse et)
 
 instance Monad Queue
     where
