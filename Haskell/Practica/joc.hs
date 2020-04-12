@@ -38,7 +38,7 @@ showCell (Just X) = 'X'
 showCell (Just O) = 'O'
 
 
-data AI = RANDOM | GREEDY | SMART
+data AI = RANDOM | GREEDY | SMART | NONE
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -51,52 +51,34 @@ main = do
     putStrLn "######################################################"
 
     (n,m)   <- read_size
-    ai      <- read_ai
-    result  <- loop (empty_board n m) ai move_list
+    num_pl  <- read_num_players
+    ai      <- read_ai num_pl
 
-    end_game result
+    winner <- loop (empty_board n m) ai (move_list num_pl)
+
+    end_game num_pl winner
 
 ---------------------------------------------------------------------------------------------------------------
 
 -- Bucle principal del juego. Este recibe como entrada el tablero actual, el nivel de
 -- la cpu, y un booleano que indica si le toca al usuario (True) o a la cpu (False)
-loop :: Board -> AI -> [(Player, AI -> Board -> IO String)] -> IO Bool
-loop board ai ((X,move):moves) = do
+loop :: Board -> AI -> [(Player, AI -> Board -> IO Int)] -> IO Player
+loop board ai ((p,move):moves) = do
     
     putStrLn $ show board
-    putStrLn "Turno del jugador X:\n"
 
-    user_move <- move ai board
-    let newBoard = put_piece X (string2int user_move) board
+    putStrLn $ "    Turno del jugador " ++ show p ++ ":\n"
 
-    let end = check_win X newBoard
+    player_move <- move ai board
+    let newBoard = put_piece p ( player_move) board
+
+    let end = check_win p newBoard
     
     if end then do
         putStrLn $ show newBoard
-        return True
+        return p
     else do 
         loop newBoard ai moves
-
----------------------------------------------------------------------------------------------------------------
-
--- Para jugar en modo2 jugadores (debugging)
-loop board ai ((O,move):moves) = do
-    
-    putStrLn $ show board
-    putStrLn "Turno del jugador O:\n"
-
-    user_move <- move ai board
-    let newBoard = put_piece O (string2int user_move) board
-
-    let end = check_win O newBoard
-    
-    if end then do
-        putStrLn $ show newBoard
-        return True
-    else do 
-        loop newBoard ai moves
-
----------------------------------------------------------------------------------------------------------------
 
 string2int :: String -> Int
 string2int c = (ord (head c)) - (ord 'A')
@@ -133,9 +115,6 @@ max_length p dir board@(Board heigth width tops _)
                             new_accum
                                 | x         = accum + 1
                                 | otherwise = 0
-        
-
-max_length _ _ _ = 0
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -150,15 +129,22 @@ put_piece p col board@(Board h w tops cells)
             new_tops        = replaceNth col (row - 1) tops
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Definimos move_list como una lista infinita de movimientos alternados entre el jugador y la IA.
--- Cada movimiento es una tupla formada por el jugador que mueve y una funcion que retorna el
--- entero correspondiente con la posicion en la que se va a insertar la ficha en el tablero.
--- Cuando es turno del jugador, la funcion es la lectura de la entrada, y cuando es turno de la
--- cpu, la funcion es una llamada a la funcion ai_move pasando como parametro el tablero y el tipo de IA.
-move_list :: [(Player, AI -> Board -> IO String)]
---move_list =  cycle [ (X, \_ _ -> getLine), (O, \ai board -> return $ ai_move ai board)]
-move_list =  cycle [ (X, \_ _ -> getLine), (O, \_ _ -> getLine)]
+{-|
+Definimos move_list como una lista infinita de movimientos alternados entre el jugador y la IA. Cada movimiento
+es una tupla formada por el jugador que mueve y una funcion que retorna el entero correspondiente con la
+posicion en la que se va a insertar la ficha en el tablero. Cuando es turno del jugador, la funcion es la
+lectura de la entrada, y cuando es turno de la cpu, la funcion es una llamada a la funcion ai_move pasando como
+parametro el tablero y el tipo de IA.
+-}
+move_list :: Int -> [(Player, AI -> Board -> IO Int)]
+move_list num_pl
+    | num_pl == 1   =  cycle [ (X, \_ _ -> inputColumn), (O, \ai board -> return $ ai_move ai board)]
+    | num_pl == 2   =  cycle [ (X, \_ _ -> inputColumn), (O, \_ _ -> inputColumn)]
+    where
+        inputColumn :: IO Int
+        inputColumn = do
+            line <- getLine
+            return $ string2int line
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -166,30 +152,45 @@ ai_move :: AI -> Board -> Int
 ai_move ai board = 0
 
 ---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que trata la situacion de final del juego, donde el usuario puede decidir
+si quiere jugar de nuevo o no.
+-}
+end_game :: Int -> Player -> IO ()
+end_game 1 p = do
 
--- Funcion que trata la situacion de final del juego, donde el usuario puede decidir
--- si quiere jugar de nuevo o no.
-end_game :: Bool -> IO ()
-end_game result = do
+    if p == X then do putStrLn "    FELICIDADES! HAS GANADO!"
+    else do putStrLn "    GAME OVER :("
 
-    if result then do putStrLn "FELICIDADES! HAS GANADO!"
-    else do putStrLn "GAME OVER :("
-
-    putStrLn "\nQuieres volver a jugar? (si/no)"
+    putStrLn "\n    Quieres volver a jugar? (si/no)"
     repetir <- getLine
 
-    if repetir == "si" then
+    if repetir == "si" || repetir == "SI" then
         main
-    else if repetir == "no" then do
-        putStrLn "\nHASTA PRONTO!!"
+    else if repetir == "no" || repetir == "NO" then do
+        putStrLn "\n    HASTA PRONTO!!"
         return ()
     else do
-        end_game result
+        end_game 1 p      
+end_game 2 p = do
+
+    putStrLn $ "    FELICIDADES " ++ show p ++ "! HAS GANADO!"
+    putStrLn "\n    Quereis volver a jugar? (si/no)"
+
+    repetir <- getLine
+
+    if repetir == "si" || repetir == "SI" then
+        main
+    else if repetir == "no" || repetir == "NO" then do
+        putStrLn "\n    HASTA PRONTO!!"
+        return ()
+    else do
+        end_game 2 p
 
 ---------------------------------------------------------------------------------------------------------------
 
 -- Lectura del tamano del tablero
-read_size:: IO (Int,Int)
+read_size :: IO (Int,Int)
 read_size = do
     putStrLn "\n- Introduce el numero de filas del tablero:"
     input_n <- getLine
@@ -208,9 +209,27 @@ read_size = do
 
 ---------------------------------------------------------------------------------------------------------------
 
+read_num_players :: IO Int
+read_num_players = do
+    
+    putStrLn "\n- Introduce el numero de jugadores: (1/2)"
+    input <- getLine
+
+    let n = (read input :: Int)
+
+    if n < 1 || n > 2 then do
+        putStrLn "\n *** Entrada no valida. Debe introducir 1 o 2. ***"
+        read_num_players
+    else
+        return n
+
+
+---------------------------------------------------------------------------------------------------------------
+
 -- Seleccion de la dificultad del oponente
-read_ai:: IO AI
-read_ai = do
+read_ai :: Int -> IO AI
+read_ai 2 = return NONE
+read_ai 1 = do
 
     putStrLn "\n- Escoge la dificultad del oponente:\n"
     putStrLn "\t [1] - Random"
@@ -231,7 +250,7 @@ read_ai = do
         return SMART
     else do
         putStrLn "Entrada no valida. Introduzca '1', '2' o '3'."
-        read_ai
+        read_ai 1
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -246,11 +265,11 @@ string2list :: String -> [String]
 string2list = map (\x -> [x])
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Funcion que convierte el Map que representa el tablero en una lista de strings con los chars
--- asociados a cada celda. Los elementos estan ordenados del mismo modo que acostrumbramos a leer
--- una matriz en NxM: Primero el elemento [0,0], [0,1], [0,2], etc.
-
+{-|
+Funcion que convierte el Map que representa el tablero en una lista de strings con los chars
+asociados a cada celda. Los elementos estan ordenados del mismo modo que acostrumbramos a leer
+una matriz en NxM: Primero el elemento [0,0], [0,1], [0,2], etc.
+-}
 board2string :: Board -> [String]
 board2string board@(Board heigth width _ _) = [row_elements row | row <- [0 .. heigth - 1]]
         where
@@ -258,15 +277,18 @@ board2string board@(Board heigth width _ _) = [row_elements row | row <- [0 .. h
             cell row col = showCell ((get (row,col)) board)
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Funcion que encapsula aquella funcion que dada un tablero, retorna el elemento [i,j]. Utiliza
--- la funcion lookup de la clase Map. Aplica la busqueda sobre el Map asociaciado al Board (3r 
--- elemento de su struct)
+{-|
+Funcion que encapsula aquella funcion que dada un tablero, retorna el elemento [i,j]. Utiliza
+la funcion lookup de la clase Map. Aplica la busqueda sobre el Map asociaciado al Board (3r 
+elemento de su struct)
+-}
 get :: (Int,Int) -> (Board -> Maybe Player)
 get coord = Map.lookup coord . cells
 
 ---------------------------------------------------------------------------------------------------------------
-
+{-|
+Funcion que reemplaza el elemento iesimo de una lista de una lista.
+-}
 replaceNth :: Int -> a -> [a] -> [a]
 replaceNth _ _ [] = []
 replaceNth n newVal (x:xs)
