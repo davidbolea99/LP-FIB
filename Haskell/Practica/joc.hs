@@ -72,7 +72,7 @@ loop board ai ((p,move):moves) = do
     player_move <- move ai board
     let newBoard = put_piece p ( player_move) board
 
-    let end = check_win p newBoard
+    let end = some_line_of p 4 newBoard
     
     if end then do
         putStrLn $ show newBoard
@@ -88,13 +88,13 @@ string2int c = (ord (head c)) - (ord 'A')
 data Direction = H | V | BU | UB
     deriving Eq
 
-check_win :: Player -> Board -> Bool
-check_win player board = check_hor || check_vert || check_diag_BU || check_diag_UB
+some_line_of :: Player -> Int -> Board -> Bool
+some_line_of player n board = check_hor || check_vert || check_diag_BU || check_diag_UB
     where
-        check_hor       = (max_length player H  board) >= 4
-        check_vert      = (max_length player V  board) >= 4
-        check_diag_BU   = (max_length player BU board) >= 4
-        check_diag_UB   = (max_length player UB board) >= 4
+        check_hor       = (max_length player H  board) >= n
+        check_vert      = (max_length player V  board) >= n
+        check_diag_BU   = (max_length player BU board) >= n
+        check_diag_UB   = (max_length player UB board) >= n
 
 max_length :: Player -> Direction -> Board -> Int
 max_length p dir board@(Board heigth width tops _)
@@ -149,7 +149,7 @@ move_list num_pl
 ---------------------------------------------------------------------------------------------------------------
 
 ai_move :: AI -> Board -> IO Int
-ai_move RANDOM (Board heigth width tops _) = randInt valid_nums
+ai_move RANDOM (Board heigth width tops _) = randOfList valid_nums
     where
         valid_nums = [i | i <- [0..(width-1)], tops!!i >= 0 ]
         -- |randOfList retorna un elemento aleatorio de una lista no vacia.
@@ -160,8 +160,22 @@ ai_move RANDOM (Board heigth width tops _) = randInt valid_nums
             let result = list !! index
             return result
 
-ai_move GREEDY board = 0
-ai_move SMART board = 0
+ai_move GREEDY board@(Board _ width _ _)
+    | not $ cpu_win  == []    = return $ head $ cpu_win
+    | not $ user_win == []    = return $ head $ user_win
+    | not $ cpu_3    == []    = return $ head $ cpu_3
+    | not $ cpu_2    == []    = return $ head $ cpu_2
+    | otherwise               = ai_move RANDOM board
+    where
+        line p n = [ move | move <- [0..width-1], some_line_of p n (put_piece p move board) ]
+        user_win = line X 4
+        cpu_win  = line O 4
+        cpu_3    = line O 3
+        cpu_2    = line O 2
+
+
+
+ai_move SMART board = return $ 0
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
