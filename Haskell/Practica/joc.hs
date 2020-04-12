@@ -1,6 +1,6 @@
+import System.Random
 import Data.List
 import Data.Char
-
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -138,7 +138,7 @@ parametro el tablero y el tipo de IA.
 -}
 move_list :: Int -> [(Player, AI -> Board -> IO Int)]
 move_list num_pl
-    | num_pl == 1   =  cycle [ (X, \_ _ -> inputColumn), (O, \ai board -> return $ ai_move ai board)]
+    | num_pl == 1   =  cycle [ (X, \_ _ -> inputColumn), (O, \ai board -> ai_move ai board)]
     | num_pl == 2   =  cycle [ (X, \_ _ -> inputColumn), (O, \_ _ -> inputColumn)]
     where
         inputColumn :: IO Int
@@ -148,8 +148,20 @@ move_list num_pl
 
 ---------------------------------------------------------------------------------------------------------------
 
-ai_move :: AI -> Board -> Int
-ai_move ai board = 0
+ai_move :: AI -> Board -> IO Int
+ai_move RANDOM (Board heigth width tops _) = randInt valid_nums
+    where
+        valid_nums = [i | i <- [0..(width-1)], tops!!i >= 0 ]
+        -- |randOfList retorna un elemento aleatorio de una lista no vacia.
+        randOfList :: [Int] -> IO Int
+        randOfList list = do
+            random <- randomIO :: IO Int
+            let index = random `mod` (length list)
+            let result = list !! index
+            return result
+
+ai_move GREEDY board = 0
+ai_move SMART board = 0
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -294,3 +306,5 @@ replaceNth _ _ [] = []
 replaceNth n newVal (x:xs)
     | n == 0 = newVal:xs
     | otherwise = x:replaceNth (n-1) newVal xs
+
+
