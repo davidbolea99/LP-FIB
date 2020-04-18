@@ -74,6 +74,20 @@ loop board ai ((p,move):moves) = do
 
     let end = some_line_of p 4 newBoard
     
+    -- putStrLn $ "Longitud:     " ++ ":\t" ++ " 2 3 4"
+    -- putStrLn $ "------------------------------------------------------------------------"
+    -- putStrLn $ "Lineas  H de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X H  newBoard)
+    -- putStrLn $ "Lineas  V de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X V  newBoard)
+    -- putStrLn $ "Lineas BU de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X BU newBoard)
+    -- putStrLn $ "Lineas UB de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X UB newBoard)
+    -- putStrLn $ "------------------------------------------------------------------------"
+    -- putStrLn $ "Lineas  H de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O H  newBoard)
+    -- putStrLn $ "Lineas  V de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O V  newBoard)
+    -- putStrLn $ "Lineas BU de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O BU newBoard)
+    -- putStrLn $ "Lineas UB de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O UB newBoard)
+    -- putStrLn $ "------------------------------------------------------------------------"
+
+
     if end then do
         putStrLn $ show newBoard
         return p
@@ -89,7 +103,7 @@ data Direction = H | V | BU | UB
     deriving Eq
 
 some_line_of :: Player -> Int -> Board -> Bool
-some_line_of player n board = check_hor || check_vert || check_diag_BU || check_diag_UB
+some_line_of player n board = check_diag_BU || check_diag_UB || check_hor || check_vert
     where
         check_hor       = (max_length player H  board) >= n
         check_vert      = (max_length player V  board) >= n
@@ -110,11 +124,45 @@ max_length p dir board@(Board heigth width tops _)
                     max_length_bools' _ max [] = max
                     max_length_bools' accum max (x:xs)
                         | new_accum > max     = max_length_bools' new_accum new_accum xs 
-                        | otherwise               = max_length_bools' new_accum max xs
+                        | otherwise           = max_length_bools' new_accum max       xs
                         where
                             new_accum
                                 | x         = accum + 1
                                 | otherwise = 0
+
+how_many_lines_of_each_length :: Player -> Direction -> Board -> (Int,Int,Int)
+how_many_lines_of_each_length p dir board@(Board heigth width tops _)
+    | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(heigth-1)] ] | i <- [0..(width-1) ] ]
+    | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
+    | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
+    | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+        where 
+            how_many_trues :: [Bool] -> (Int,Int,Int)
+            how_many_trues list = (q2,q3,q4)
+                where
+                    q2 = list_of_counters !! 0
+                    q3 = list_of_counters !! 1
+                    q4 = list_of_counters !! 2
+                    list_of_counters = [how_many_trues_of_length n 0 list | n <- [2..4]]
+
+                    how_many_trues_of_length :: Int -> Int -> [Bool] -> Int
+                    
+                    how_many_trues_of_length 4 acc []
+                        | 4 <= acc  = 1
+                        | otherwise = 0
+                    how_many_trues_of_length 4 acc (x:xs)
+                        | x         =     how_many_trues_of_length 4 (acc+1) xs
+                        | 4 <= acc  = 1 + how_many_trues_of_length 4 0       xs
+                        | otherwise =     how_many_trues_of_length 4 0       xs
+                    
+                    how_many_trues_of_length n acc []
+                        | n == acc  = 1
+                        | otherwise = 0
+                    how_many_trues_of_length n acc (x:xs)
+                        | x         =     how_many_trues_of_length n (acc+1) xs
+                        | n == acc  = 1 + how_many_trues_of_length n 0       xs
+                        | otherwise =     how_many_trues_of_length n 0       xs
+            
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -151,7 +199,7 @@ move_list num_pl
 ai_move :: AI -> Board -> IO Int
 ai_move RANDOM (Board heigth width tops _) = randOfList valid_nums
     where
-        valid_nums = [i | i <- [0..(width-1)], tops!!i >= 0 ]
+        valid_nums = [i | i <- [0..(width-1)], not $ tops!!i < 0 ]
         -- |randOfList retorna un elemento aleatorio de una lista no vacia.
         randOfList :: [Int] -> IO Int
         randOfList list = do
@@ -160,18 +208,32 @@ ai_move RANDOM (Board heigth width tops _) = randOfList valid_nums
             let result = list !! index
             return result
 
-ai_move GREEDY board@(Board _ width _ _)
-    | not $ cpu_win  == []    = return $ head $ cpu_win
-    | not $ user_win == []    = return $ head $ user_win
-    | not $ cpu_3    == []    = return $ head $ cpu_3
-    | not $ cpu_2    == []    = return $ head $ cpu_2
-    | otherwise               = ai_move RANDOM board
+ai_move GREEDY board@(Board heigth width tops _)
+    | not $ cpu_4_moves == []   = return $ head $ cpu_4_moves
+    | not $ user_win    == []   = return $ head $ user_win
+    | not $ cpu_3_moves == []   = return $ head $ cpu_3_moves
+    | not $ cpu_2_moves == []   = return $ head $ cpu_2_moves
+    | otherwise                 = ai_move RANDOM board
+   
     where
-        line p n = [ move | move <- [0..width-1], some_line_of p n (put_piece p move board) ]
-        user_win = line X 4
-        cpu_win  = line O 4
-        cpu_3    = line O 3
-        cpu_2    = line O 2
+        
+        user_win = [ move | move <- [0..width-1], not_full move, some_line_of X 4 (put_piece X move board) ]
+        not_full col = not $ (tops !! col) < 0
+
+        count_total board' = suma_tripletas [count_h board', count_v board', count_ub board', count_bu board']
+        count_h  board' = how_many_lines_of_each_length O H  board'
+        count_v  board' = how_many_lines_of_each_length O V  board'
+        count_ub board' = how_many_lines_of_each_length O UB board'
+        count_bu board' = how_many_lines_of_each_length O BU board'
+        
+        (t2,t3,t4) = count_total board
+
+        cpu_moves = [ ((count_total $ put_piece O move board),move) | move <- [0..width-1], not_full move ]
+        
+        cpu_4_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0]
+        cpu_3_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
+        cpu_2_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
+
 
 
 
@@ -322,3 +384,8 @@ replaceNth n newVal (x:xs)
     | otherwise = x:replaceNth (n-1) newVal xs
 
 
+suma_tripletas :: [(Int,Int,Int)] -> (Int,Int,Int)
+suma_tripletas list = foldl (suma_tripleta) (0,0,0) list
+    where
+        suma_tripleta :: (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int)
+        suma_tripleta (a1,b1,c1) (a2,b2,c2) = (a1+a2,b1+b2,c1+c2)
