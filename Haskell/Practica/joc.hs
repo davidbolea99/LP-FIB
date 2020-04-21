@@ -6,9 +6,29 @@ import qualified Data.Map as Map
 
 ----------------------- Representacion del mundo ------------------------
 
+{-|
+El tipo de dato Player representa los dos tipos de fichas que se pueden introducir en el tablero.
+En caso de jugar contra la CPU, el usuario llevara la X y la CPU el O.
+-}
 data Player = X | O
     deriving (Bounded, Enum, Eq, Ord, Show)
 
+{-|
+Tipo de razonamiento asociado al segundo jugador (CPU). En caso de jugar en modo de dos jugadores,
+entonces se selecciona NONE como sistema de razonamiento, ya que este no se va a usar.
+-}
+data AI = RANDOM | GREEDY | SMART | NONE
+
+{-|
+La estructura de datos Board representa el tablero sobre el que se juega. Cada elemento de la
+estructura representa:
+    - heigth:   Altura del tablero (numero de filas)
+    - width:    Anchura del tablero (numero de columnas)
+    - tops:     Lista que guarda, para cada columna, la altura en la que se insertara la proxima ficha.
+    - cells:    Diccionario clave-valor que representa las celdas del tablero. La clave es una tupla
+                con las coordenadas (i,j) donde se localiza la celta, y el valor es el Player presente,
+                o bien X, o bien O. Cabe destacar que este solo contiene las celdas con un jugador presente.
+-}
 data Board = Board
     {
         heigth  :: Int,
@@ -17,6 +37,9 @@ data Board = Board
         cells   :: Map (Int, Int) Player
     }
 
+{-|
+Instanciacion de la funcion show para la estructura de datos que representa el tablero.
+-}
 instance Show Board where
     show board@(Board _ width _ _) = header ++ border_up ++ separated_board ++ border_down
         where
@@ -30,18 +53,14 @@ instance Show Board where
             rowSeparator = "\n   +" ++ (intercalate "+" $ take width $ repeat "---") ++ "+\n   "
             colSeparator = intercalate " | " . map (\x -> [x])
 
-type Cell = Maybe Player
-
-showCell :: Cell -> Char
-showCell Nothing  = ' '
-showCell (Just X) = 'X'
-showCell (Just O) = 'O'
-
-
-data AI = RANDOM | GREEDY | SMART | NONE
-
 ---------------------------------------------------------------------------------------------------------------
 
+{-|
+Funcion main del juego. Esta escribe la presentacion, recibe los datos necesarios para empezar la partida:
+tamano del tablero, numero de jugadores y tipo de IA (si es necesario). Posteriormente llama a la funcion
+loop que es la que se encarga de mover el juego hasta que este finaliza, retorna el ganador, y trata el final
+de la partida con la funcion end_game.
+-}
 main :: IO ()
 main = do
 
@@ -52,16 +71,29 @@ main = do
 
     (n,m)   <- read_size
     num_pl  <- read_num_players
-    ai      <- read_ai num_pl
+    
+    let list_of_moves = move_list num_pl
+    let initial_board = empty_board n m
 
-    winner <- loop (empty_board n m) ai (move_list num_pl)
+    if num_pl == 2 then do
+        winner <- loop initial_board NONE list_of_moves
+        end_game 2 winner
 
-    end_game num_pl winner
+    else do
+        ai     <- read_ai
+        winner <- loop initial_board ai list_of_moves
+        end_game 1 winner
+
 
 ---------------------------------------------------------------------------------------------------------------
 
--- Bucle principal del juego. Este recibe como entrada el tablero actual, el nivel de
--- la cpu, y un booleano que indica si le toca al usuario (True) o a la cpu (False)
+{-|
+Loop principal del juego. Este recibe, a cada ronda, el tablero actual, el nivel de inteligencia de la cpu, y
+una lista de funciones que encapsulan cada uno de los movimientos*. Esta funcion se va llamando a si misma
+mientras no haya un ganador, solicitando movimientos a los jugadores. Una vez el juego ha terminado, retorna
+el ganador de la partida.
+* Se explica con mas detalle en la descripcion de la funcion "move_list".
+-}
 loop :: Board -> AI -> [(Player, AI -> Board -> IO Int)] -> IO Player
 loop board ai ((p,move):moves) = do
     
@@ -76,17 +108,16 @@ loop board ai ((p,move):moves) = do
     
     -- putStrLn $ "Longitud:     " ++ ":\t" ++ " 2 3 4"
     -- putStrLn $ "------------------------------------------------------------------------"
-    -- putStrLn $ "Lineas  H de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X H  newBoard)
-    -- putStrLn $ "Lineas  V de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X V  newBoard)
-    -- putStrLn $ "Lineas BU de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X BU newBoard)
-    -- putStrLn $ "Lineas UB de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length X UB newBoard)
+    -- putStrLn $ "Lineas  H de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X H  newBoard)
+    -- putStrLn $ "Lineas  V de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X V  newBoard)
+    -- putStrLn $ "Lineas BU de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X BU newBoard)
+    -- putStrLn $ "Lineas UB de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X UB newBoard)
     -- putStrLn $ "------------------------------------------------------------------------"
-    -- putStrLn $ "Lineas  H de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O H  newBoard)
-    -- putStrLn $ "Lineas  V de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O V  newBoard)
-    -- putStrLn $ "Lineas BU de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O BU newBoard)
-    -- putStrLn $ "Lineas UB de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length O UB newBoard)
+    -- putStrLn $ "Lineas  H de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O H  newBoard)
+    -- putStrLn $ "Lineas  V de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O V  newBoard)
+    -- putStrLn $ "Lineas BU de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O BU newBoard)
+    -- putStrLn $ "Lineas UB de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O UB newBoard)
     -- putStrLn $ "------------------------------------------------------------------------"
-
 
     if end then do
         putStrLn $ show newBoard
@@ -94,14 +125,19 @@ loop board ai ((p,move):moves) = do
     else do 
         loop newBoard ai moves
 
-string2int :: String -> Int
-string2int c = (ord (head c)) - (ord 'A')
-
 ---------------------------------------------------------------------------------------------------------------
-
+{-|
+Tipo de dato que encapsula las cuatro direcciones en las que se puede recorrer el tablero. Horizontal, vertical,
+en diagonal bottom-up (de izquierda a derecha) y en diagonal top-bottom (de izquierda a derecha).
+-}
 data Direction = H | V | BU | UB
     deriving Eq
 
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un tablero B, un jugador P y un entero N, te dice si hay una linea de por lo menos N fichas consecutivas
+del jugador P en el tablero B en cualquier direccion.
+-}
 some_line_of :: Player -> Int -> Board -> Bool
 some_line_of player n board = check_diag_BU || check_diag_UB || check_hor || check_vert
     where
@@ -110,6 +146,12 @@ some_line_of player n board = check_diag_BU || check_diag_UB || check_hor || che
         check_diag_BU   = (max_length player BU board) >= n
         check_diag_UB   = (max_length player UB board) >= n
 
+---------------------------------------------------------------------------------------------------------------
+
+{-|
+Funcion que retorna un entero que indica cual es la longitud de la linea de fichas consecutivas mas larga de un jugador
+p, en una direccion dir, en un tablero board.
+-}
 max_length :: Player -> Direction -> Board -> Int
 max_length p dir board@(Board heigth width tops _)
     | dir == H  = maximum [ max_length_bools [ get (i,j) board == Just p | j <- [0..(heigth-1)] ] | i <- [0..(width-1) ] ]
@@ -130,8 +172,13 @@ max_length p dir board@(Board heigth width tops _)
                                 | x         = accum + 1
                                 | otherwise = 0
 
-how_many_lines_of_each_length :: Player -> Direction -> Board -> (Int,Int,Int)
-how_many_lines_of_each_length p dir board@(Board heigth width tops _)
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna una tripleta (q2,q3,q4) donde qi es la cantidad de lineas de i fichas consecutivas de un player p, en
+una direccion dir, en un tablero board.
+-}
+how_many_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
+how_many_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
     | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(heigth-1)] ] | i <- [0..(width-1) ] ]
     | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
     | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
@@ -162,10 +209,25 @@ how_many_lines_of_each_length p dir board@(Board heigth width tops _)
                         | x         =     how_many_trues_of_length n (acc+1) xs
                         | n == acc  = 1 + how_many_trues_of_length n 0       xs
                         | otherwise =     how_many_trues_of_length n 0       xs
-            
+
+---------------------------------------------------------------------------------------------------------------      
+{-|
+Funcion que retorna una tripleta (q2,q3,q4) donde qi es la cantidad de lineas de i fichas consecutivas de un player p, en
+una todas las direcciones, en un tablero board.
+-}
+how_many_lines_of_each_length :: Player -> Board -> (Int,Int,Int)
+how_many_lines_of_each_length p board = suma_tripletas [count_h, count_v, count_ub, count_bu]
+    where
+        count_h  = how_many_lines_of_each_length_in_some_dir p H  board
+        count_v  = how_many_lines_of_each_length_in_some_dir p V  board
+        count_ub = how_many_lines_of_each_length_in_some_dir p UB board
+        count_bu = how_many_lines_of_each_length_in_some_dir p BU board
 
 ---------------------------------------------------------------------------------------------------------------
-
+{-|
+Funcion que dado un jugador p y una columna col, inserta una ficha del jugador p en la columna col. A efectos practicos,
+"inserta" una nueva entrada en el diccionario del tablero
+-}
 put_piece :: Player -> Int -> Board -> Board
 put_piece p col board@(Board h w tops cells)
     | out_of_bounds = board
@@ -178,11 +240,12 @@ put_piece p col board@(Board h w tops cells)
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
-Definimos move_list como una lista infinita de movimientos alternados entre el jugador y la IA. Cada movimiento
-es una tupla formada por el jugador que mueve y una funcion que retorna el entero correspondiente con la
-posicion en la que se va a insertar la ficha en el tablero. Cuando es turno del jugador, la funcion es la
-lectura de la entrada, y cuando es turno de la cpu, la funcion es una llamada a la funcion ai_move pasando como
-parametro el tablero y el tipo de IA.
+Definimos move_list como una lista infinita de movimientos alternados entre el hunmano y la IA, o por dos humanos.
+Cada movimiento es una tupla formada por el jugador que mueve y una funcion que retorna el entero correspondiente
+con la posicion en la que se va a insertar la ficha en el tablero.
+
+Cuando es turno de un humano, la funcion es la lectura de la entrada, y cuando es turno de la cpu, la funcion es
+una llamada a la funcion ai_move pasando como parametro el tablero y el tipo de IA.
 -}
 move_list :: Int -> [(Player, AI -> Board -> IO Int)]
 move_list num_pl
@@ -193,50 +256,56 @@ move_list num_pl
         inputColumn = do
             line <- getLine
             return $ string2int line
+            where
+                string2int :: String -> Int
+                string2int c = (ord (head c)) - (ord 'A')
 
 ---------------------------------------------------------------------------------------------------------------
-
+{-|
+Funcion que dado un tipo de razonamiento, y el tablero actual, retorna la posicion donde quiere colocar la
+siguiente ficha.
+-}
 ai_move :: AI -> Board -> IO Int
 ai_move RANDOM (Board heigth width tops _) = randOfList valid_nums
     where
         valid_nums = [i | i <- [0..(width-1)], not $ tops!!i < 0 ]
-        -- |randOfList retorna un elemento aleatorio de una lista no vacia.
+        -- | randOfList retorna un elemento aleatorio de una lista no vacia.
         randOfList :: [Int] -> IO Int
         randOfList list = do
             random <- randomIO :: IO Int
             let index = random `mod` (length list)
             let result = list !! index
             return result
-
 ai_move GREEDY board@(Board heigth width tops _)
-    | not $ cpu_4_moves == []   = return $ head $ cpu_4_moves
-    | not $ user_win    == []   = return $ head $ user_win
-    | not $ cpu_3_moves == []   = return $ head $ cpu_3_moves
-    | not $ cpu_2_moves == []   = return $ head $ cpu_2_moves
-    | otherwise                 = ai_move RANDOM board
+    | could cpu_win        = return $ head $ cpu_win        -- Si la CPU puede ganar, pone ficha ahi
+    | could user_win       = return $ head $ user_win       -- Si el usario puede ganar, la CPU bloquea su victoria
+    | could cpu_line_of_3  = return $ head $ cpu_line_of_3  -- Si la CPU puede hacer una linea de 3 fichas, pone ficha ahi
+    | could cpu_line_of_2  = return $ head $ cpu_line_of_2  -- Si la CPU puede hacer una linea de 2 fichas, pone ficha ahi
+    | otherwise            = ai_move RANDOM board           -- Si no se da ninguna de las situaciones anteriores, pone ficha en un lugar random.
    
     where
+        -- Funcion que retorna cierto si esta tiene algun elemento
+        could :: [a] -> Bool
+        could [] = False
+        could _  = True
+
+        -- Funcion que dada una columna del tablero actual, te dice si hay hueco para echar otra ficha
+        not_full :: Int -> Bool
+        not_full col = not $ (tops !! col) < 0 
+
+        -- Lista de movimientos con los que el usuario gana, son aquellos en los que si el pone ficha, se genera una linea de 4.
+        user_win  = [ move | move <- [0..width-1], not_full move, some_line_of X 4 (put_piece X move board) ]
+
+        -- Lista de movimiento que puede hacer la CPU y cuantas lineas de cada distancia obtiene en cada caso
+        cpu_moves = [ ((how_many_lines_of_each_length O (put_piece O move board)),move) | move <- [0..width-1], not_full move ]
         
-        user_win = [ move | move <- [0..width-1], not_full move, some_line_of X 4 (put_piece X move board) ]
-        not_full col = not $ (tops !! col) < 0
+        (t2,t3,t4) = how_many_lines_of_each_length O board
 
-        count_total board' = suma_tripletas [count_h board', count_v board', count_ub board', count_bu board']
-        count_h  board' = how_many_lines_of_each_length O H  board'
-        count_v  board' = how_many_lines_of_each_length O V  board'
-        count_ub board' = how_many_lines_of_each_length O UB board'
-        count_bu board' = how_many_lines_of_each_length O BU board'
         
-        (t2,t3,t4) = count_total board
-
-        cpu_moves = [ ((count_total $ put_piece O move board),move) | move <- [0..width-1], not_full move ]
         
-        cpu_4_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0]
-        cpu_3_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
-        cpu_2_moves = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
-
-
-
-
+        cpu_win       = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0]
+        cpu_line_of_3 = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
+        cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
 ai_move SMART board = return $ 0
 
 ---------------------------------------------------------------------------------------------------------------
@@ -276,8 +345,9 @@ end_game 2 p = do
         end_game 2 p
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Lectura del tamano del tablero
+{-|
+Lectura del tamano del tablero
+-}
 read_size :: IO (Int,Int)
 read_size = do
     putStrLn "\n- Introduce el numero de filas del tablero:"
@@ -296,7 +366,9 @@ read_size = do
         return (n,m)
 
 ---------------------------------------------------------------------------------------------------------------
-
+{-|
+Funcion lee cual es el numero de jugadores deseado.
+-}
 read_num_players :: IO Int
 read_num_players = do
     
@@ -313,11 +385,12 @@ read_num_players = do
 
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Seleccion de la dificultad del oponente
-read_ai :: Int -> IO AI
-read_ai 2 = return NONE
-read_ai 1 = do
+{-|
+Funcion lee cual es la dificultad de la cpu deseada. Esta recibe el numero de jugadores ya que, en caso de estar
+jugando 2 jugadores, retornara NONE.
+-}
+read_ai :: IO AI
+read_ai = do
 
     putStrLn "\n- Escoge la dificultad del oponente:\n"
     putStrLn "\t [1] - Random"
@@ -338,17 +411,21 @@ read_ai 1 = do
         return SMART
     else do
         putStrLn "Entrada no valida. Introduzca '1', '2' o '3'."
-        read_ai 1
+        read_ai
 
 ---------------------------------------------------------------------------------------------------------------
-
--- Funcion que retorna un Board de tamano N x N vacio (lleno de espacios)
+{-|
+Funcion que retorna un Board de tamano N x N vacio (lleno de espacios)
+-}
 empty_board :: Int -> Int -> Board
 empty_board n m = Board n m tops Map.empty
     where
         tops = take m $ iterate id (n-1)
 
--- Convierte un String en una lista de Strings correspondientes a cada uno de los caracteres.
+---------------------------------------------------------------------------------------------------------------
+{-|
+Convierte un String en una lista de Strings correspondientes a cada uno de los caracteres.
+-}
 string2list :: String -> [String]
 string2list = map (\x -> [x])
 
@@ -361,13 +438,17 @@ una matriz en NxM: Primero el elemento [0,0], [0,1], [0,2], etc.
 board2string :: Board -> [String]
 board2string board@(Board heigth width _ _) = [row_elements row | row <- [0 .. heigth - 1]]
         where
-            row_elements row = [cell row col | col <- [0 .. width - 1]]
-            cell row col = showCell ((get (row,col)) board)
+            row_elements row = [cell (row,col) | col <- [0 .. width - 1]]
+            cell pos = showCell $ (get pos) board
+            
+            showCell :: Maybe Player -> Char
+            showCell Nothing  = ' '
+            showCell (Just p) = head $ show p
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion que encapsula aquella funcion que dada un tablero, retorna el elemento [i,j]. Utiliza
-la funcion lookup de la clase Map. Aplica la busqueda sobre el Map asociaciado al Board (3r 
+la funcion lookup de la clase Map. Aplica la busqueda sobre el Map asociaciado al Board (4o 
 elemento de su struct)
 -}
 get :: (Int,Int) -> (Board -> Maybe Player)
@@ -383,7 +464,12 @@ replaceNth n newVal (x:xs)
     | n == 0 = newVal:xs
     | otherwise = x:replaceNth (n-1) newVal xs
 
-
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna la suma de una lista de tripletas en forma de tripleta.
+El primer elemento es la suma de todos los primeros elementos de las tuplas de la lista y de forma analoga para
+las otras dos posiciones.
+-}
 suma_tripletas :: [(Int,Int,Int)] -> (Int,Int,Int)
 suma_tripletas list = foldl (suma_tripleta) (0,0,0) list
     where
