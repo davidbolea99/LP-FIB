@@ -94,7 +94,7 @@ mientras no haya un ganador, solicitando movimientos a los jugadores. Una vez el
 el ganador de la partida.
 * Se explica con mas detalle en la descripcion de la funcion "move_list".
 -}
-loop :: Board -> AI -> [(Player, AI -> Board -> IO Int)] -> IO Player
+loop :: Board -> AI -> [(Player, AI -> Board -> IO Int)] -> IO (Maybe Player)
 loop board ai ((p,move):moves) = do
     
     putStrLn $ show board
@@ -105,23 +105,14 @@ loop board ai ((p,move):moves) = do
     let newBoard = put_piece p ( player_move) board
 
     let end = some_line_of p 4 newBoard
-    
-    -- putStrLn $ "Longitud:     " ++ ":\t" ++ " 2 3 4"
-    -- putStrLn $ "------------------------------------------------------------------------"
-    -- putStrLn $ "Lineas  H de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X H  newBoard)
-    -- putStrLn $ "Lineas  V de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X V  newBoard)
-    -- putStrLn $ "Lineas BU de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X BU newBoard)
-    -- putStrLn $ "Lineas UB de " ++ show X ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir X UB newBoard)
-    -- putStrLn $ "------------------------------------------------------------------------"
-    -- putStrLn $ "Lineas  H de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O H  newBoard)
-    -- putStrLn $ "Lineas  V de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O V  newBoard)
-    -- putStrLn $ "Lineas BU de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O BU newBoard)
-    -- putStrLn $ "Lineas UB de " ++ show O ++ ":\t" ++ (show $ how_many_lines_of_each_length_in_some_dir O UB newBoard)
-    -- putStrLn $ "------------------------------------------------------------------------"
+    let tie = [] == possible_moves newBoard
 
     if end then do
         putStrLn $ show newBoard
-        return p
+        return $ Just p
+    else if tie then do
+        putStrLn $ show newBoard
+        return Nothing
     else do 
         loop newBoard ai moves
 
@@ -266,9 +257,9 @@ Funcion que dado un tipo de razonamiento, y el tablero actual, retorna la posici
 siguiente ficha.
 -}
 ai_move :: AI -> Board -> IO Int
-ai_move RANDOM (Board heigth width tops _) = randOfList valid_nums
+ai_move RANDOM board@(Board heigth width _ _) = randOfList valid_nums
     where
-        valid_nums = [i | i <- [0..(width-1)], not $ tops!!i < 0 ]
+        valid_nums = [move | move <- [0..(width-1)], valid_move board move ]
         -- | randOfList retorna un elemento aleatorio de una lista no vacia.
         randOfList :: [Int] -> IO Int
         randOfList list = do
@@ -284,39 +275,101 @@ ai_move GREEDY board@(Board heigth width tops _)
     | otherwise            = ai_move RANDOM board           -- Si no se da ninguna de las situaciones anteriores, pone ficha en un lugar random.
    
     where
-        -- Funcion que retorna cierto si esta tiene algun elemento
-        could :: [a] -> Bool
-        could [] = False
-        could _  = True
-
-        -- Funcion que dada una columna del tablero actual, te dice si hay hueco para echar otra ficha
-        not_full :: Int -> Bool
-        not_full col = not $ (tops !! col) < 0 
-
         -- Lista de movimientos con los que el usuario gana, son aquellos en los que si el pone ficha, se genera una linea de 4.
-        user_win  = [ move | move <- [0..width-1], not_full move, some_line_of X 4 (put_piece X move board) ]
+        user_win  = [ move | move <- [0..width-1], valid_move board move, some_line_of X 4 (put_piece X move board) ]
 
         -- Lista de movimiento que puede hacer la CPU y cuantas lineas de cada distancia obtiene en cada caso
-        cpu_moves = [ ((how_many_lines_of_each_length O (put_piece O move board)),move) | move <- [0..width-1], not_full move ]
+        cpu_moves = [ ((how_many_lines_of_each_length O (put_piece O move board)),move) | move <- [0..width-1], valid_move board move ]
         
         (t2,t3,t4) = how_many_lines_of_each_length O board
 
         
         
-        cpu_win       = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0]
+        cpu_win       = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0 ]
         cpu_line_of_3 = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
         cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
 
-ai_move SMART board = return $ 0
+ai_move SMART board@(Board heigth width _ _)
+    | first_2_rounds                = return $ head $ moves
+    | could $ win_in 1              = return $ head $ win_in 1
+    | could $ avoid_losing_in 1     = return $ head $ avoid_losing_in 1
+    | could $ win_in 2              = return $ head $ win_in 2
+    | could $ avoid_losing_in 2     = return $ head $ avoid_losing_in 2
+    -- | could $ win_in 3              = return $ head $ win_in 3
+    -- | could $ avoid_losing_in 3     = return $ head $ avoid_losing_in 3
+    -- | could $ win_in 4              = return $ head $ win_in 4
+    -- | could $ avoid_losing_in 4     = return $ head $ avoid_losing_in 4
+    | could $ win_in 5              = return $ head $ win_in 5
+    | could $ avoid_losing_in 5     = return $ head $ avoid_losing_in 5
+    -- | could $ win_in 6              = return $ head $ win_in 6
+    -- | could $ avoid_losing_in 6     = return $ head $ avoid_losing_in 6
+    -- | could $ win_in 7              = return $ head $ win_in 7
+    -- | could $ avoid_losing_in 7     = return $ head $ avoid_losing_in 7
+    -- | could $ create_a_seven        = 
+    -- | could $ central_highground    = 
+    -- | could $ corners_highground    =
+    | otherwise               = do
+        putStrLn $ "\nHas entrado al otherwise.\n"
+        return (width-1)--ai_move GREEDY board
+    where
+        (past,left) = game_round board
+        first_2_rounds = past < 2
+        moves = possible_moves board
+        
+        win_in :: Int -> [Int]
+        win_in n = win_in_board (2*n - 1) O O board
+
+        avoid_losing_in :: Int -> [Int]
+        avoid_losing_in n = win_in_board (2*n - 1) X X board
+
+        win_in_board :: Int -> Player -> Player -> Board -> [Int]
+        win_in_board n curr_p winner board'
+            | n == 1    = [ move | move <- (possible_moves board'), winner_win move, not $ oponent_win move ]
+            | otherwise = [ move |  move <- (possible_moves board'), condition move]
+            where
+                condition move      = (not $ oponent_win move) && (could $ win_in_board (n-1) (oponent curr_p) winner (newBoard move))
+                winner_win move     = some_line_of winner           4 (newBoard move)
+                oponent_win move    = some_line_of (oponent winner) 4 (newBoard move)
+                newBoard move       = put_piece curr_p move board'
+
+        oponent :: Player -> Player
+        oponent X = O
+        oponent O = X
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna los movimientos posibles a realizar, ordenados por cercania al centro de un tablero concreto.
+-}
+possible_moves :: Board -> [Int]
+possible_moves board@(Board _ width _ _) = filter (valid_move board) (central_cols width)
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna cierto si la lista pasada como parametro tiene algun elemento
+-}
+could :: [a] -> Bool
+could [] = False
+could _  = True
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion que trata la situacion de final del juego, donde el usuario puede decidir
 si quiere jugar de nuevo o no.
 -}
-end_game :: Int -> Player -> IO ()
-end_game 1 p = do
+end_game :: Int -> Maybe Player -> IO ()
+end_game _ (Nothing) = do -- Empate
+    putStrLn "    EMPATE !!!"
+    putStrLn "\n    Quieres volver a jugar? (si/no)"
+    repetir <- getLine
 
+    if repetir == "si" || repetir == "SI" then
+        main
+    else if repetir == "no" || repetir == "NO" then do
+        putStrLn "\n    HASTA PRONTO!!"
+        return ()
+    else do
+        end_game 1 (Nothing)
+end_game 1 (Just p) = do -- Version Humano VS. CPU
     if p == X then do putStrLn "    FELICIDADES! HAS GANADO!"
     else do putStrLn "    GAME OVER :("
 
@@ -329,8 +382,8 @@ end_game 1 p = do
         putStrLn "\n    HASTA PRONTO!!"
         return ()
     else do
-        end_game 1 p      
-end_game 2 p = do
+        end_game 1 (Just p)
+end_game 2 (Just p) = do -- Version Humano VS. Humano
 
     putStrLn $ "    FELICIDADES " ++ show p ++ "! HAS GANADO!"
     putStrLn "\n    Quereis volver a jugar? (si/no)"
@@ -343,7 +396,7 @@ end_game 2 p = do
         putStrLn "\n    HASTA PRONTO!!"
         return ()
     else do
-        end_game 2 p
+        end_game 2 (Just p)
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -382,9 +435,7 @@ read_size = do
     else do
         putStrLn "\n *** Entrada no valida. Debes introducir 1 o 2. ***"
         read_size
-    
 
-    
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion lee cual es el numero de jugadores deseado.
@@ -433,6 +484,20 @@ read_ai = do
         putStrLn "Entrada no valida. Introduzca '1', '2' o '3'."
         read_ai
 
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion me retorna la lista de columnas por orden de cercania al centro.
+-}
+central_cols :: Int -> [Int]
+central_cols width
+    | (mod width 2) == 0    = central_cols'
+    | otherwise             = [div (width-1) 2] ++ central_cols'
+    where
+        central_cols' = tuples2list $ reverse $ [(x,y) | x <- [0..(centre-1)], y <- [centre..last], x+y == last]
+        centre = (div width 2)
+        last = width - 1
+
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion que retorna un Board de tamano N x N vacio (lleno de espacios)
@@ -441,6 +506,33 @@ empty_board :: Int -> Int -> Board
 empty_board n m = Board n m tops Map.empty
     where
         tops = take m $ iterate id (n-1)
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna un Board de tamano N x N vacio (lleno de espacios)
+-}
+is_empty :: Board -> Bool
+is_empty (Board heigth width tops _) = and [(tops!!i) == heigth-1 | i <- [0..width-1]]
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un tablero y un movimiento (columna en la que tirar ficha), retorna true si el movimiento es
+valido, es decir, si la columna no esta llena. Retorna falso si la columna esta llena.
+-}
+valid_move :: Board -> Int -> Bool
+valid_move (Board _ _ tops _) col = not $ tops!!col < 0
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un tablero, retorna una tupla con la cantidad de movimientos realizados, y la cantidad de
+movimientos restantes.
+-}
+game_round :: Board -> (Int,Int)
+game_round (Board heigth width tops _) = (past,left)
+    where
+        left  = width + foldl (+) 0 tops
+        past  = total - left
+        total = heigth * width
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -495,3 +587,12 @@ suma_tripletas list = foldl (suma_tripleta) (0,0,0) list
     where
         suma_tripleta :: (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int)
         suma_tripleta (a1,b1,c1) (a2,b2,c2) = (a1+a2,b1+b2,c1+c2)
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion pasa de una lista de tuplas, a una lista que contiene los mismos elementos, en el mismo orden, pero sin
+estar envueltos en tuplas.
+-}
+tuples2list :: [(a,a)] -> [a]
+tuples2list [] = []
+tuples2list ((x, y) : xs) = x : y : (tuples2list xs)
