@@ -154,8 +154,8 @@ p, en una direccion dir, en un tablero board.
 -}
 max_length :: Player -> Direction -> Board -> Int
 max_length p dir board@(Board heigth width tops _)
-    | dir == H  = maximum [ max_length_bools [ get (i,j) board == Just p | j <- [0..(heigth-1)] ] | i <- [0..(width-1) ] ]
-    | dir == V  = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
+    | dir == H  = maximum [ max_length_bools [ get (i,j) board == Just p | j <- [0..(width-1)]  ] | i <- [0..(heigth-1) ] ]
+    | dir == V  = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1) ] ]
     | dir == BU = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
     | dir == UB = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
         where
@@ -179,7 +179,7 @@ una direccion dir, en un tablero board.
 -}
 how_many_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
 how_many_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
-    | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(heigth-1)] ] | i <- [0..(width-1) ] ]
+    | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
     | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
     | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
     | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
@@ -306,6 +306,7 @@ ai_move GREEDY board@(Board heigth width tops _)
         cpu_win       = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0]
         cpu_line_of_3 = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
         cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
+
 ai_move SMART board = return $ 0
 
 ---------------------------------------------------------------------------------------------------------------
@@ -350,21 +351,40 @@ Lectura del tamano del tablero
 -}
 read_size :: IO (Int,Int)
 read_size = do
-    putStrLn "\n- Introduce el numero de filas del tablero:"
-    input_n <- getLine
 
-    putStrLn "\n- Introduce el numero de columnas del tablero:"
-    input_m <- getLine
+    putStrLn "\n- Con que tablero quieres jugar?\n"
+    putStrLn "\t [1] - Tablero clasico (6x7)."
+    putStrLn "\t [2] - Tablero personalizado"
+    putStrLn "\nIntroduce el numero correspondiente:"
+    
+    input_q <- getLine
+    let q = (read input_q :: Int)
 
-    let n = (read input_n :: Int)
-    let m = (read input_m :: Int)
+    if q == 1 then do
+        return (6,7)
+    
+    else if q == 2 then do
+        putStrLn "\n- Introduce el numero de filas del tablero:"
+        input_n <- getLine
 
-    if n < 1 || m < 1 || (n < 4 && m < 4) then do
-        putStrLn "\n *** Entrada no valida. Los numeros deben ser positivos, y almenos uno de ellos, igual o superior a 4 ***"
+        putStrLn "\n- Introduce el numero de columnas del tablero:"
+        input_m <- getLine
+
+        let n = (read input_n :: Int)
+        let m = (read input_m :: Int)
+
+        if n < 1 || m < 1 || (n < 4 && m < 4) then do
+            putStrLn "\n *** Entrada no valida. Los numeros deben ser positivos, y almenos uno de ellos, igual o superior a 4 ***"
+            read_size
+        else
+            return (n,m)
+
+    else do
+        putStrLn "\n *** Entrada no valida. Debes introducir 1 o 2. ***"
         read_size
-    else
-        return (n,m)
+    
 
+    
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion lee cual es el numero de jugadores deseado.
