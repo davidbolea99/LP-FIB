@@ -14,6 +14,13 @@ data Player = X | O
     deriving (Bounded, Enum, Eq, Ord, Show)
 
 {-|
+Funcion que dado un jugador, te retorna su oponente.
+-}
+oponent :: Player -> Player
+oponent X = O
+oponent O = X
+
+{-|
 Tipo de razonamiento asociado al segundo jugador (CPU). En caso de jugar en modo de dos jugadores,
 entonces se selecciona NONE como sistema de razonamiento, ya que este no se va a usar.
 -}
@@ -164,44 +171,7 @@ max_length p dir board@(Board heigth width tops _)
                                 | otherwise = 0
 
 ---------------------------------------------------------------------------------------------------------------
-{-|
-Funcion que retorna una tripleta (q2,q3,q4) donde qi es la cantidad de lineas de i fichas consecutivas de un player p, en
-una direccion dir, en un tablero board.
--}
-how_many_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
-how_many_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
-    | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
-    | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
-    | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
-    | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
-        where 
-            how_many_trues :: [Bool] -> (Int,Int,Int)
-            how_many_trues list = (q2,q3,q4)
-                where
-                    q2 = list_of_counters !! 0
-                    q3 = list_of_counters !! 1
-                    q4 = list_of_counters !! 2
-                    list_of_counters = [how_many_trues_of_length n 0 list | n <- [2..4]]
-
-                    how_many_trues_of_length :: Int -> Int -> [Bool] -> Int
-                    
-                    how_many_trues_of_length 4 acc []
-                        | 4 <= acc  = 1
-                        | otherwise = 0
-                    how_many_trues_of_length 4 acc (x:xs)
-                        | x         =     how_many_trues_of_length 4 (acc+1) xs
-                        | 4 <= acc  = 1 + how_many_trues_of_length 4 0       xs
-                        | otherwise =     how_many_trues_of_length 4 0       xs
-                    
-                    how_many_trues_of_length n acc []
-                        | n == acc  = 1
-                        | otherwise = 0
-                    how_many_trues_of_length n acc (x:xs)
-                        | x         =     how_many_trues_of_length n (acc+1) xs
-                        | n == acc  = 1 + how_many_trues_of_length n 0       xs
-                        | otherwise =     how_many_trues_of_length n 0       xs
-
----------------------------------------------------------------------------------------------------------------      
+    
 {-|
 Funcion que retorna una tripleta (q2,q3,q4) donde qi es la cantidad de lineas de i fichas consecutivas de un player p, en
 una todas las direcciones, en un tablero board.
@@ -213,6 +183,39 @@ how_many_lines_of_each_length p board = suma_tripletas [count_h, count_v, count_
         count_v  = how_many_lines_of_each_length_in_some_dir p V  board
         count_ub = how_many_lines_of_each_length_in_some_dir p UB board
         count_bu = how_many_lines_of_each_length_in_some_dir p BU board
+
+        how_many_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
+        how_many_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
+            | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
+            | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
+            | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
+            | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+                where 
+                    how_many_trues :: [Bool] -> (Int,Int,Int)
+                    how_many_trues list = (q2,q3,q4)
+                        where
+                            q2 = list_of_counters !! 0
+                            q3 = list_of_counters !! 1
+                            q4 = list_of_counters !! 2
+                            list_of_counters = [how_many_trues_of_length n 0 list | n <- [2..4]]
+
+                            how_many_trues_of_length :: Int -> Int -> [Bool] -> Int
+                            
+                            how_many_trues_of_length 4 acc []
+                                | 4 <= acc  = 1
+                                | otherwise = 0
+                            how_many_trues_of_length 4 acc (x:xs)
+                                | x         =     how_many_trues_of_length 4 (acc+1) xs
+                                | 4 <= acc  = 1 + how_many_trues_of_length 4 0       xs
+                                | otherwise =     how_many_trues_of_length 4 0       xs
+                            
+                            how_many_trues_of_length n acc []
+                                | n == acc  = 1
+                                | otherwise = 0
+                            how_many_trues_of_length n acc (x:xs)
+                                | x         =     how_many_trues_of_length n (acc+1) xs
+                                | n == acc  = 1 + how_many_trues_of_length n 0       xs
+                                | otherwise =     how_many_trues_of_length n 0       xs
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -253,6 +256,71 @@ move_list num_pl
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
+Funcion que retorna una tripleta (q2,q3,q4) donde q_i es la cantidad de lineas potenciales de llegar a 4 de i
+fichas consecutivas de un player p, en un tablero board.
+-}
+heuristic :: (Int,Int,Int) -> Int
+heuristic (q2,q3,q4) = q4 * value4 + q3 * value3 + q2 * value2
+    where
+        value2 = 2
+        value3 = 8
+        value4 = 100
+
+---------------------------------------------------------------------------------------------------------------
+
+{-|
+Funcion que retorna una tripleta (q2,q3,q4) donde q_i es la cantidad de lineas potenciales de llegar a 4 de i
+fichas consecutivas de un player p, en un tablero board.
+-}
+how_many_potential_lines_of_each_length :: Player -> Board -> (Int,Int,Int)
+how_many_potential_lines_of_each_length p board = suma_tripletas [count_h, count_v, count_ub, count_bu]
+    where
+        count_h  = how_many_potential_lines_of_each_length_in_some_dir p H  board
+        count_v  = how_many_potential_lines_of_each_length_in_some_dir p V  board
+        count_ub = how_many_potential_lines_of_each_length_in_some_dir p UB board
+        count_bu = how_many_potential_lines_of_each_length_in_some_dir p BU board
+
+        how_many_potential_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
+        how_many_potential_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
+            | dir == H  = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
+            | dir == V  = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
+            | dir == BU = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
+            | dir == UB = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+                where 
+                    translate (Just player)
+                        | player == p   =  1   -- coincide jugador
+                        | otherwise     = -1   -- jugador opuesto
+                    translate _         =  0   -- hueco
+
+                    contar_lineas :: [Int] -> (Int,Int,Int)
+                    contar_lineas list = contar_lineas' (0,0,0) list
+                        where
+                            contar_lineas' :: (Int,Int,Int) -> [Int] -> (Int,Int,Int)
+                            -- Los 1 son fichas del jugador que inspeccionamos y los -1 del oponente. Los 0 son casillas vacias.
+                            -- Patrones de lineas y posibles lineas a generar
+                            contar_lineas' (q2,q3,q4) (1:1:1:1:xs)  = contar_lineas' (q2     ,q3     ,q4 + 1) (1:1:1:xs)
+
+                            contar_lineas' (q2,q3,q4) (0:1:1:1:xs)  = contar_lineas' (q2     ,q3 + 2 ,q4    ) (1:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (1:0:1:1:xs)  = contar_lineas' (q2     ,q3 + 1 ,q4    ) (0:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (1:1:0:1:xs)  = contar_lineas' (q2     ,q3 + 1 ,q4    ) (1:0:1:xs)
+                            contar_lineas' (q2,q3,q4) (1:1:1:0:xs)  = contar_lineas' (q2     ,q3 + 2 ,q4    ) (1:1:0:xs)
+                            
+                            contar_lineas' (q2,q3,q4) (0:0:1:1:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (0:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (0:1:0:1:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (1:0:1:xs)
+                            contar_lineas' (q2,q3,q4) (0:1:1:0:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (1:1:0:xs)
+                            contar_lineas' (q2,q3,q4) (1:0:0:1:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (0:0:1:xs)
+                            contar_lineas' (q2,q3,q4) (1:0:1:0:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (0:1:0:xs)
+                            contar_lineas' (q2,q3,q4) (1:1:0:0:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (1:0:0:xs)
+                            
+                            -- Cuando encuentra fichas del contrincante (no hace match con niguna de las anteriores),
+                            -- ignora las siguientes casillas hasta que consiga hacer match, o se acabe la linea
+                            contar_lineas' contadores (_:xs)        = contar_lineas' contadores xs
+
+                            -- Si no queda nada que inspeccionar, se retorna el contador resultante
+                            contar_lineas' contadores []            = contadores
+
+---------------------------------------------------------------------------------------------------------------
+{-|
 Funcion que dado un tipo de razonamiento, y el tablero actual, retorna la posicion donde quiere colocar la
 siguiente ficha.
 -}
@@ -264,7 +332,7 @@ ai_move RANDOM board@(Board heigth width _ _) = randOfList valid_nums
         randOfList :: [Int] -> IO Int
         randOfList list = do
             random <- randomIO :: IO Int
-            let index = random `mod` (length list)
+            let index = mod random (length list)
             let result = list !! index
             return result
 ai_move GREEDY board@(Board heigth width tops _)
@@ -283,38 +351,56 @@ ai_move GREEDY board@(Board heigth width tops _)
         
         (t2,t3,t4) = how_many_lines_of_each_length O board
 
-        
-        
         cpu_win       = [ move | ((c2,c3,c4),move) <- cpu_moves, c4 > 0 ]
         cpu_line_of_3 = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
         cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
-
 ai_move SMART board@(Board heigth width _ _)
-    | first_2_rounds                = return $ head $ moves
-    | could $ win_in 1              = return $ head $ win_in 1
-    | could $ avoid_losing_in 1     = return $ head $ avoid_losing_in 1
-    | could $ win_in 2              = return $ head $ win_in 2
-    | could $ avoid_losing_in 2     = return $ head $ avoid_losing_in 2
-    -- | could $ win_in 3              = return $ head $ win_in 3
-    -- | could $ avoid_losing_in 3     = return $ head $ avoid_losing_in 3
-    -- | could $ win_in 4              = return $ head $ win_in 4
-    -- | could $ avoid_losing_in 4     = return $ head $ avoid_losing_in 4
-    | could $ win_in 5              = return $ head $ win_in 5
-    | could $ avoid_losing_in 5     = return $ head $ avoid_losing_in 5
-    -- | could $ win_in 6              = return $ head $ win_in 6
-    -- | could $ avoid_losing_in 6     = return $ head $ avoid_losing_in 6
-    -- | could $ win_in 7              = return $ head $ win_in 7
-    -- | could $ avoid_losing_in 7     = return $ head $ avoid_losing_in 7
-    -- | could $ create_a_seven        = 
-    -- | could $ central_highground    = 
-    -- | could $ corners_highground    =
-    | otherwise               = do
-        putStrLn $ "\nHas entrado al otherwise.\n"
-        return (width-1)--ai_move GREEDY board
+    | first_2_rounds                = return $ head $ allowed_moves O board
+    | could $ win_in 1              = do
+        putStrLn $ "\nWin in 1 ... \n"
+        return $ head $ win_in 1
+    | could $ avoid_losing_in 1     = do
+        putStrLn $ "\nAvoid losing in 1 ... \n"
+        return $ head $ avoid_losing_in 1
+    | otherwise                     = do
+        putStrLn $ "\nComputing ... \n"
+        return choose_the_best_move
     where
         (past,left) = game_round board
         first_2_rounds = past < 2
-        moves = possible_moves board
+
+        allowed_moves :: Player -> Board -> [Int]
+        allowed_moves p board' = (possible_moves board') \\ (prohibited_moves p board')
+            where
+                prohibited_moves :: Player -> Board -> [Int]
+                prohibited_moves p b = [ p_moves | 
+                                            p_moves <- (possible_moves b),
+                                            could $ [ opo_moves |
+                                                        opo_moves <- (possible_moves (newBoard p_moves)),
+                                                        some_line_of opo 4 (put_piece opo opo_moves (newBoard p_moves))
+                                                    ]
+                                        ]
+                    where
+                        newBoard p_moves = put_piece p p_moves b
+                        opo = oponent p
+
+        choose_the_best_move :: Int
+        choose_the_best_move = choose_the_best_move' O (minimum [left,7]) board
+            where
+                choose_the_best_move' :: Player -> Int -> Board -> Int
+                choose_the_best_move' curr_p step board'
+                    | step == 1         = best_move
+                    | otherwise         = choose_the_best_move' next_p (step - 1) (put_piece curr_p best_move board')
+                    where
+                        (_,best_move)
+                            | could $ moves1 = maximum moves1
+                            | could $ moves2 = maximum moves2
+                        moves1 = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (allowed_moves curr_p board')]
+                        moves2 = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (possible_moves board')]
+                        evaluate_curr move  = heuristic $ how_many_potential_lines_of_each_length curr_p (newBoard move)
+                        evaluate_opo  move  = heuristic $ how_many_potential_lines_of_each_length next_p (newBoard move)
+                        newBoard move       = put_piece curr_p move board'
+                        next_p              = oponent curr_p
         
         win_in :: Int -> [Int]
         win_in n = win_in_board (2*n - 1) O O board
@@ -324,17 +410,13 @@ ai_move SMART board@(Board heigth width _ _)
 
         win_in_board :: Int -> Player -> Player -> Board -> [Int]
         win_in_board n curr_p winner board'
-            | n == 1    = [ move | move <- (possible_moves board'), winner_win move, not $ oponent_win move ]
-            | otherwise = [ move |  move <- (possible_moves board'), condition move]
+            | n == 1    = [ move | move <- (allowed_moves curr_p board'), winner_win move, not $ oponent_win move ]
+            | otherwise = [ move | move <- (allowed_moves curr_p board'), condition move]
             where
                 condition move      = (not $ oponent_win move) && (could $ win_in_board (n-1) (oponent curr_p) winner (newBoard move))
                 winner_win move     = some_line_of winner           4 (newBoard move)
                 oponent_win move    = some_line_of (oponent winner) 4 (newBoard move)
                 newBoard move       = put_piece curr_p move board'
-
-        oponent :: Player -> Player
-        oponent X = O
-        oponent O = X
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
