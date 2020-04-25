@@ -152,23 +152,31 @@ p, en una direccion dir, en un tablero board.
 -}
 max_length :: Player -> Direction -> Board -> Int
 max_length p dir board@(Board heigth width tops _)
-    | dir == H  = maximum [ max_length_bools [ get (i,j) board == Just p | j <- [0..(width-1)]  ] | i <- [0..(heigth-1) ] ]
-    | dir == V  = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1) ] ]
-    | dir == BU = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
-    | dir == UB = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+    | dir == H  = maximum [ max_length_bools [ get (i,j) board == Just p | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
+    | dir == V  = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(heigth-1)] ] | j <- [0..(width-1 )] ]
+    | dir == BU = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(heigth-1)], j <- [0..(width-1)], i+j == n ] | n <-[0..(width+heigth-2)   ] ] --n <-[3..(width+heigth-4)] ]
+    | dir == UB = maximum [ max_length_bools [ get (i,j) board == Just p | i <- [0..(heigth-1)], j <- [0..(width-1)], i-j == n ] | n <-[-(width-1)..(heigth-1)] ] --n <-[-(width-4)..(heigth-5)] ]
         where
             max_length_bools :: [Bool] -> Int
-            max_length_bools list = max_length_bools' 0 0 list
+            max_length_bools list = max_length_bools' 0 list
                 where
-                    max_length_bools' :: Int -> Int -> [Bool] -> Int
-                    max_length_bools' _ max [] = max
-                    max_length_bools' accum max (x:xs)
-                        | new_accum > max     = max_length_bools' new_accum new_accum xs 
-                        | otherwise           = max_length_bools' new_accum max       xs
-                        where
-                            new_accum
-                                | x         = accum + 1
-                                | otherwise = 0
+                    max_length_bools' maxL []                       = maxL
+                    max_length_bools' maxL (True:True:True:True:xs) = max_length_bools' (max maxL 4) (True:True:True:xs)
+                    max_length_bools' maxL (True:True:True:xs)      = max_length_bools' (max maxL 3) (True:True:xs)
+                    max_length_bools' maxL (True:True:xs)           = max_length_bools' (max maxL 2) (True:xs)
+                    max_length_bools' maxL (_:xs)                   = max_length_bools' maxL         xs
+
+            -- max_length_bools list = max_length_bools' 0 0 list
+            --     where
+            --         max_length_bools' :: Int -> Int -> [Bool] -> Int
+            --         max_length_bools' _ max [] = max
+            --         max_length_bools' accum max (x:xs)
+            --             | new_accum > max     = max_length_bools' new_accum new_accum xs 
+            --             | otherwise           = max_length_bools' new_accum max       xs
+            --             where
+            --                 new_accum
+            --                     | x         = accum + 1
+            --                     | otherwise = 0
 
 ---------------------------------------------------------------------------------------------------------------
     
@@ -186,10 +194,10 @@ how_many_lines_of_each_length p board = suma_tripletas [count_h, count_v, count_
 
         how_many_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
         how_many_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
-            | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
-            | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
-            | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
-            | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+            | dir == H  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | j <- [0..(width-1)  ] ] | i <- [0..(heigth-1)] ]
+            | dir == V  = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(heigth-1) ] ] | j <- [0..(width-1) ] ]
+            | dir == BU = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(heigth-1) ] , j <- [0..(width-1) ], i+j == n ] | n <-[0..(width+heigth-2)   ] ]
+            | dir == UB = suma_tripletas [ how_many_trues [ get (i,j) board == Just p | i <- [0..(heigth-1) ] , j <- [0..(width-1) ], i-j == n ] | n <-[-(width-1)..(heigth-1)] ]
                 where 
                     how_many_trues :: [Bool] -> (Int,Int,Int)
                     how_many_trues list = (q2,q3,q4)
@@ -243,8 +251,8 @@ una llamada a la funcion ai_move pasando como parametro el tablero y el tipo de 
 -}
 move_list :: Int -> [(Player, AI -> Board -> IO Int)]
 move_list num_pl
-    | num_pl == 1   =  cycle [ (X, \_ _ -> inputColumn), (O, \ai board -> ai_move ai board)]
-    | num_pl == 2   =  cycle [ (X, \_ _ -> inputColumn), (O, \_ _ -> inputColumn)]
+    | num_pl == 1   =  cycle [ (O, \ai board -> ai_move ai board), (X, \_ _ -> inputColumn) ]
+    | num_pl == 2   =  cycle [ (O, \_ _ -> inputColumn),           (X, \_ _ -> inputColumn) ]
     where
         inputColumn :: IO Int
         inputColumn = do
@@ -259,11 +267,12 @@ move_list num_pl
 Funcion que retorna una tripleta (q2,q3,q4) donde q_i es la cantidad de lineas potenciales de llegar a 4 de i
 fichas consecutivas de un player p, en un tablero board.
 -}
-heuristic :: (Int,Int,Int) -> Int
-heuristic (q2,q3,q4) = q4 * value4 + q3 * value3 + q2 * value2
+heuristic :: Player -> Board  -> Int
+heuristic p board = q4 * value4 + q3 * value3 + q2 * value2
     where
+        (q2,q3,q4) = how_many_potential_lines_of_each_length p board
         value2 = 2
-        value3 = 8
+        value3 = 20
         value4 = 100
 
 ---------------------------------------------------------------------------------------------------------------
@@ -283,9 +292,9 @@ how_many_potential_lines_of_each_length p board = suma_tripletas [count_h, count
         how_many_potential_lines_of_each_length_in_some_dir :: Player -> Direction -> Board -> (Int,Int,Int)
         how_many_potential_lines_of_each_length_in_some_dir p dir board@(Board heigth width tops _)
             | dir == H  = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | j <- [0..(width-1) ] ] | i <- [0..(heigth-1)] ]
-            | dir == V  = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ] ] | j <- [0..(heigth-1)] ]
-            | dir == BU = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ], j <- [0..(heigth-1)], i+j == n ] | n <-[3..(width+heigth-5)] ]
-            | dir == UB = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(width-1) ], j <- [0..(heigth-1)], i-j == n ] | n <-[-(width-4)..(heigth-4)] ]
+            | dir == V  = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(heigth-1)] ] | j <- [0..(width-1) ] ]
+            | dir == BU = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(heigth-1)], j <- [0..(width-1)], i+j == n ] | n <-[0..(width+heigth-2)   ] ]
+            | dir == UB = suma_tripletas [ contar_lineas [ translate (get (i,j) board) | i <- [0..(heigth-1)], j <- [0..(width-1)], i-j == n ] | n <-[-(width-1)..(heigth-1)] ]
                 where 
                     translate (Just player)
                         | player == p   =  1   -- coincide jugador
@@ -296,28 +305,158 @@ how_many_potential_lines_of_each_length p board = suma_tripletas [count_h, count
                     contar_lineas list = contar_lineas' (0,0,0) list
                         where
                             contar_lineas' :: (Int,Int,Int) -> [Int] -> (Int,Int,Int)
+
                             -- Los 1 son fichas del jugador que inspeccionamos y los -1 del oponente. Los 0 son casillas vacias.
                             -- Patrones de lineas y posibles lineas a generar
-                            contar_lineas' (q2,q3,q4) (1:1:1:1:xs)  = contar_lineas' (q2     ,q3     ,q4 + 1) (1:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (1:1:1:1:xs)  = contar_lineas' (q2     ,q3     ,q4 + 1000000) (1:1:1:xs)
 
-                            contar_lineas' (q2,q3,q4) (0:1:1:1:xs)  = contar_lineas' (q2     ,q3 + 2 ,q4    ) (1:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (0:1:1:1:xs)  = contar_lineas' (q2     ,q3 + 5 ,q4    ) (1:1:1:xs)
                             contar_lineas' (q2,q3,q4) (1:0:1:1:xs)  = contar_lineas' (q2     ,q3 + 1 ,q4    ) (0:1:1:xs)
                             contar_lineas' (q2,q3,q4) (1:1:0:1:xs)  = contar_lineas' (q2     ,q3 + 1 ,q4    ) (1:0:1:xs)
-                            contar_lineas' (q2,q3,q4) (1:1:1:0:xs)  = contar_lineas' (q2     ,q3 + 2 ,q4    ) (1:1:0:xs)
+                            contar_lineas' (q2,q3,q4) (1:1:1:0:xs)  = contar_lineas' (q2     ,q3 + 5 ,q4    ) (1:1:0:xs)
                             
-                            contar_lineas' (q2,q3,q4) (0:0:1:1:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (0:1:1:xs)
+                            contar_lineas' (q2,q3,q4) (0:0:1:1:xs)  = contar_lineas' (q2 + 5 ,q3     ,q4    ) (0:1:1:xs)
                             contar_lineas' (q2,q3,q4) (0:1:0:1:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (1:0:1:xs)
-                            contar_lineas' (q2,q3,q4) (0:1:1:0:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (1:1:0:xs)
+                            contar_lineas' (q2,q3,q4) (0:1:1:0:xs)  = contar_lineas' (q2 + 5 ,q3     ,q4    ) (1:1:0:xs)
                             contar_lineas' (q2,q3,q4) (1:0:0:1:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (0:0:1:xs)
                             contar_lineas' (q2,q3,q4) (1:0:1:0:xs)  = contar_lineas' (q2 + 1 ,q3     ,q4    ) (0:1:0:xs)
-                            contar_lineas' (q2,q3,q4) (1:1:0:0:xs)  = contar_lineas' (q2 + 2 ,q3     ,q4    ) (1:0:0:xs)
-                            
+                            contar_lineas' (q2,q3,q4) (1:1:0:0:xs)  = contar_lineas' (q2 + 5 ,q3     ,q4    ) (1:0:0:xs)
+
                             -- Cuando encuentra fichas del contrincante (no hace match con niguna de las anteriores),
                             -- ignora las siguientes casillas hasta que consiga hacer match, o se acabe la linea
                             contar_lineas' contadores (_:xs)        = contar_lineas' contadores xs
 
                             -- Si no queda nada que inspeccionar, se retorna el contador resultante
                             contar_lineas' contadores []            = contadores
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+
+-}
+build_a_seven :: Player -> Board -> [Int]
+build_a_seven p board@(Board heigth width tops _)
+    | there_is_already_a_seven  = cols_to_push
+    | otherwise                 = next_moves
+    where
+        -- If a seven already exists
+        there_is_already_a_seven = could $ cols_to_push
+        cols_to_push = [j+3 | i <- [3..(heigth-1)], j <- [0..(width-4)], get (i,j) board == Just p, space_to_win (i,j), there_is_a_seven (i,j)]
+
+        -- Otherwise, lets create a seven
+        next_moves = foldl (++) [] (map (\(x,y) -> y) distance_sorted_sevens)
+
+        -- filtering functions
+        distance_sorted_sevens = sort $ [ (distance_to coords, list_of_necessary_moves coords) | coords <- starting_cells]
+        starting_cells = [(i,j) | i <- [3..(heigth-1)], j <- [0..(width-4)], get (i,j) board == Just p, space_to_win (i,j), is_valid_for_seven (i,j)]
+        
+        -- check functions
+        there_is_a_seven cell = and $ map its_me (seven_cells cell)
+            where its_me = (\cell -> get cell board == (Just p))
+
+        is_valid_for_seven cell = and $ map not_blocked (seven_cells cell)
+            where not_blocked = (\cell -> get cell board /= (Just (oponent p)))
+
+        distance_to cell = sum $ map mine (seven_cells cell)
+            where mine = (\(i,j) -> if get (i,j) board == (Just p) then 0 else (tops!!j)-i+1)
+
+        list_of_necessary_moves (i,j) = col1 ++ col2 ++ col3
+            where
+                col1 = if remaining_c1    then [j  ]    else []
+                col2 = if remaining_c2    then [j+1]    else []
+                col3 = if remaining_c3_v1 then [j, j+3] else (if remaining_c3_v2 then [j+2] else [])
+
+                remaining_c1    = (not $ get (i-2,j  ) board == Just p) && not_empty (get (i-1,j  ) board)
+                remaining_c2    = (not $ get (i-2,j+1) board == Just p) && not_empty (get (i  ,j+1) board)
+                remaining_c3_v1 = (not $ get (i-2,j+2) board == Just p) && is_empty  (get (i-1,j+2) board) && (is_empty $ get (i-3,j) board)
+                remaining_c3_v2 = (not $ get (i-2,j+2) board == Just p) && not_empty (get (i-1,j+2) board)
+
+        -- seven constant cells
+        seven_cells (i,j) = [(i,j), (i-1,j+1), (i-2,j), (i-2,j+1), (i-2,j+2)]
+        
+        space_to_win :: (Int,Int) -> Bool
+        space_to_win (i,j) = is_empty (get (i-2,j+3) board)
+
+build_a_seven_inverted :: Player -> Board -> [Int]
+build_a_seven_inverted p board@(Board heigth width tops _)
+    | there_is_already_a_seven  = cols_to_push
+    | otherwise                 = next_moves
+    where
+        -- If a seven already exists
+        there_is_already_a_seven = could $ cols_to_push
+        cols_to_push = [j-3 | i <- [3..(heigth-1)], j <- [3..(width-1)], get (i,j) board == Just p, space_to_win (i,j), there_is_a_seven (i,j)]
+
+        -- Otherwise, lets create a seven
+        next_moves = foldl (++) [] (map (\(x,y) -> y) distance_sorted_sevens)
+
+        -- filtering functions
+        distance_sorted_sevens = sort $ [ (distance_to coords, list_of_necessary_moves coords) | coords <- starting_cells]
+        starting_cells = [(i,j) | i <- [3..(heigth-1)], j <- [3..(width-1)], get (i,j) board == Just p, space_to_win (i,j), is_valid_for_seven (i,j)]
+        
+        -- check functions
+        there_is_a_seven cell = and $ map its_me (seven_cells cell)
+            where its_me = (\cell -> get cell board == (Just p))
+
+        is_valid_for_seven cell = and $ map not_blocked (seven_cells cell)
+            where not_blocked = (\cell -> get cell board /= (Just (oponent p)))
+
+        distance_to cell = sum $ map mine (seven_cells cell)
+            where mine = (\(i,j) -> if get (i,j) board == (Just p) then 0 else (tops!!j)-i+1)
+
+        list_of_necessary_moves (i,j) = col1 ++ col2 ++ col3
+            where
+                col1 = if remaining_c1    then [j  ]    else []
+                col2 = if remaining_c2    then [j-1]    else []
+                col3 = if remaining_c3_v1 then [j, j-3] else (if remaining_c3_v2 then [j-2] else [])
+
+                remaining_c1    = (not $ get (i-2,j  ) board == Just p) && not_empty (get (i-1,j  ) board)
+                remaining_c2    = (not $ get (i-2,j-1) board == Just p) && not_empty (get (i  ,j-1) board)
+                remaining_c3_v1 = (not $ get (i-2,j-2) board == Just p) && is_empty  (get (i-1,j-2) board) && (is_empty $ get (i-3,j) board)
+                remaining_c3_v2 = (not $ get (i-2,j-2) board == Just p) && not_empty (get (i-1,j-2) board)
+
+        -- seven constant cells
+        seven_cells (i,j) = [(i,j), (i-1,j-1), (i-2,j), (i-2,j-1), (i-2,j-2)]
+        
+        space_to_win :: (Int,Int) -> Bool
+        space_to_win (i,j) = is_empty (get (i-2,j-3) board)
+        
+        is_empty :: Maybe Player -> Bool
+        is_empty m = not $ not_empty m
+
+        not_empty :: Maybe Player -> Bool
+        not_empty (Just _) = True
+        not_empty _ = False
+
+block_2side_free :: Player -> Board -> [Int]
+block_2side_free p board@(Board heigth width tops _) = [j | i <- [0..(heigth-1)], j <- [0..(width-1)], tops!!j == i, check_2side_free (i,j)]
+        where
+            check_2side_free (i,j) = first_empty && (h_check || bu_check || ub_check)
+                where
+                    first_empty = is_empty (get (i,j) board)
+                    h_check = valid_pos && next2_of_p && empty1 && empty2
+                        where
+                            valid_pos  = (j+3) < width
+                            next2_of_p = (j+2) < width && (get (i,j+1) board) == Just p && (get (i,j+2) board) == Just p
+                            empty1     = is_empty (get (i  ,j+3) board)
+                            empty2     = ((j-1) >= 0 && (is_empty (get (i,j-1) board))) || ((j+4) < width && (is_empty (get (i,j+4) board)))
+                    bu_check = valid_pos && next2_of_p && empty1 && empty2
+                        where
+                            valid_pos  = (j+3) < width && (i-3) >= 0
+                            next2_of_p = (get (i-1,j+1) board) == Just p && (get (i-2,j+2) board) == Just p
+                            empty1     = is_empty (get (i-3,j+3) board)
+                            empty2     = ((i+1) < heigth && (j-1) >= 0 && (is_empty (get (i+1,j-1) board))) || ((i-4) >= 0 && (j+4) < width && (is_empty (get (i-4,j+4) board)))
+                    ub_check = valid_pos && next2_of_p && empty1 && empty2
+                        where
+                            valid_pos  = (j+3) < width && (i+3) < heigth
+                            next2_of_p = (get (i+1,j+1) board) == Just p && (get (i+2,j+2) board) == Just p
+                            empty1     = is_empty (get (i+3,j+3) board)
+                            empty2     = ((i+1) < heigth && (j-1) >= 0 && (is_empty (get (i+1,j-1) board))) || ((i+4) < heigth && (j+4) < width && (is_empty (get (i+4,j+4) board)))
+                    
+is_empty :: Maybe Player -> Bool
+is_empty m = not $ not_empty m
+
+not_empty :: Maybe Player -> Bool
+not_empty (Just _) = True
+not_empty _ = False
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -355,37 +494,46 @@ ai_move GREEDY board@(Board heigth width tops _)
         cpu_line_of_3 = [ move | ((c2,c3,c4),move) <- cpu_moves, c3 > t3]
         cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
 ai_move SMART board@(Board heigth width _ _)
-    | first_2_rounds                = return $ head $ allowed_moves O board
+    | first_2_rounds                = return $ head $ this_allowed_moves
     | could $ win_in 1              = do
         putStrLn $ "\nWin in 1 ... \n"
         return $ head $ win_in 1
     | could $ avoid_losing_in 1     = do
         putStrLn $ "\nAvoid losing in 1 ... \n"
         return $ head $ avoid_losing_in 1
+    | could $ avoid_losing_in 2     = do
+        putStrLn $ "\nAvoid losing in 2 ... \n"
+        return $ head $ avoid_losing_in 2
+    | could $ go_to_block_2side     = do
+        putStrLn $ "\nBlocking 2side ... \n"
+        return $ head $ go_to_block_2side
+    | could $ go_for_seven          = do
+            putStrLn $ "\nBuild a seven ... \n"
+            return $ head $ go_for_seven
+    | could $ go_for_seven_inverted = do
+            putStrLn $ "\nBuild an inverted seven ... \n"
+            return $ head $ go_for_seven_inverted
     | otherwise                     = do
         putStrLn $ "\nComputing ... \n"
-        return choose_the_best_move
+        return go_for_the_best
     where
         (past,left) = game_round board
         first_2_rounds = past < 2
 
-        allowed_moves :: Player -> Board -> [Int]
-        allowed_moves p board' = (possible_moves board') \\ (prohibited_moves p board')
-            where
-                prohibited_moves :: Player -> Board -> [Int]
-                prohibited_moves p b = [ p_moves | 
-                                            p_moves <- (possible_moves b),
-                                            could $ [ opo_moves |
-                                                        opo_moves <- (possible_moves (newBoard p_moves)),
-                                                        some_line_of opo 4 (put_piece opo opo_moves (newBoard p_moves))
-                                                    ]
-                                        ]
-                    where
-                        newBoard p_moves = put_piece p p_moves b
-                        opo = oponent p
+        go_to_block_2side = block_moves \\ (block_moves \\ this_allowed_moves)
+            where block_moves = (block_2side_free X board)
 
-        choose_the_best_move :: Int
-        choose_the_best_move = choose_the_best_move' O (minimum [left,7]) board
+        go_for_seven = seven_moves \\ (seven_moves \\ this_allowed_moves)
+            where seven_moves = (build_a_seven O board)
+        
+        go_for_seven_inverted = seven_inverted_moves \\ (seven_inverted_moves \\ this_allowed_moves)
+            where seven_inverted_moves = (build_a_seven_inverted O board)
+        
+        go_for_the_best = choose_the_best_move
+
+        this_allowed_moves = allowed_moves O board
+
+        choose_the_best_move = choose_the_best_move' O left board--(minimum [left,7]) board
             where
                 choose_the_best_move' :: Player -> Int -> Board -> Int
                 choose_the_best_move' curr_p step board'
@@ -395,10 +543,10 @@ ai_move SMART board@(Board heigth width _ _)
                         (_,best_move)
                             | could $ moves1 = maximum moves1
                             | could $ moves2 = maximum moves2
-                        moves1 = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (allowed_moves curr_p board')]
-                        moves2 = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (possible_moves board')]
-                        evaluate_curr move  = heuristic $ how_many_potential_lines_of_each_length curr_p (newBoard move)
-                        evaluate_opo  move  = heuristic $ how_many_potential_lines_of_each_length next_p (newBoard move)
+                        moves1              = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (allowed_moves curr_p board') ]
+                        moves2              = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (possible_moves board')       ]
+                        evaluate_curr move  = heuristic curr_p (newBoard move)
+                        evaluate_opo  move  = heuristic next_p (newBoard move)
                         newBoard move       = put_piece curr_p move board'
                         next_p              = oponent curr_p
         
@@ -417,6 +565,23 @@ ai_move SMART board@(Board heigth width _ _)
                 winner_win move     = some_line_of winner           4 (newBoard move)
                 oponent_win move    = some_line_of (oponent winner) 4 (newBoard move)
                 newBoard move       = put_piece curr_p move board'
+
+                
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un tablero board, y un jugador p, te retorna las posiciones donde p puede tirar ficha sin provocar
+su propia derrota.
+-}
+allowed_moves :: Player -> Board -> [Int]
+allowed_moves p board' = (possible_moves board') \\ (prohibited_moves p board')
+    where
+        prohibited_moves :: Player -> Board -> [Int]
+        prohibited_moves p b = [ p_moves | p_moves <- (possible_moves b), could $
+                                        [ opo_moves | opo_moves <- (possible_moves (newBoard p_moves)), some_line_of opo 4 (put_piece opo opo_moves (newBoard p_moves)) ]
+                            ]
+            where
+                newBoard p_moves = put_piece p p_moves b
+                opo = oponent p
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
@@ -536,7 +701,6 @@ read_num_players = do
     else
         return n
 
-
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion lee cual es la dificultad de la cpu deseada. Esta recibe el numero de jugadores ya que, en caso de estar
@@ -566,7 +730,6 @@ read_ai = do
         putStrLn "Entrada no valida. Introduzca '1', '2' o '3'."
         read_ai
 
-
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion me retorna la lista de columnas por orden de cercania al centro.
@@ -588,13 +751,6 @@ empty_board :: Int -> Int -> Board
 empty_board n m = Board n m tops Map.empty
     where
         tops = take m $ iterate id (n-1)
-
----------------------------------------------------------------------------------------------------------------
-{-|
-Funcion que retorna un Board de tamano N x N vacio (lleno de espacios)
--}
-is_empty :: Board -> Bool
-is_empty (Board heigth width tops _) = and [(tops!!i) == heigth-1 | i <- [0..width-1]]
 
 ---------------------------------------------------------------------------------------------------------------
 {-|

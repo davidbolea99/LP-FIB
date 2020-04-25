@@ -28,5 +28,35 @@ b8 = put_piece X 4 b7
 b9 = put_piece X 4 b8
 b10 = put_piece X 4 b9
 
+b11 = put_piece X 6 b10
+b12 = put_piece X 6 b11
+b13 = put_piece X 6 b12
+b14 = put_piece X 6 b13
 
 loop b10 SMART (move_list 1)
+
+--------------------------------
+
+b0 = empty_board 5 6
+b1 = put_piece X 0 b0
+b2 = put_piece X 0 b1
+b3 = put_piece X 0 b2
+b4 = put_piece O 0 b3
+b5 = put_piece O 1 b4
+b6 = put_piece X 1 b5
+b7 = put_piece X 1 b6
+b8 = put_piece X 1 b7
+b9 = put_piece O 1 b8
+b10 = put_piece O 2 b9
+b11 = put_piece O 2 b10
+b12 = put_piece X 2 b11
+b13 = put_piece O 2 b12
+b14 = put_piece O 2 b13
+b15 = put_piece X 4 b14
+b16 = put_piece O 4 b15
+b17 = put_piece O 4 b16
+b18 = put_piece X 4 b17
+b19 = put_piece O 5 b18
+b20 = put_piece X 5 b19
+
+bibo = put_piece X 0 $ put_piece X 0 $ put_piece X 0 $ put_piece O 0 $ put_piece O 1 $ put_piece X 1 $ put_piece X 1 $ put_piece X 1 $ put_piece O 1 $ put_piece O 2 $ put_piece O 2 $ put_piece X 2 $ put_piece O 2 $ put_piece O 2 $ put_piece X 4 $ put_piece O 4 $ put_piece O 4 $ put_piece X 4 $ put_piece O 5 $ put_piece X 5 $ empty_board 5 6
