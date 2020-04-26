@@ -140,7 +140,7 @@ El algoritmo esta dividido en diferentes fases. Se realiza una inspeccion siguie
 4. ##### Bloquear estructuras abiertas por dos lados: 
     Esta estructura consiste en generar una linea de dos fichas, acompanada de 3 huecos, de forma que en la siguiente tirada, no puedes bloquear ambos lados. Si el enemigo la consigue, no podremos bloquearle.
     
-    ![siete](https://media.giphy.com/media/YP7yIV97xMT4cLVgFG/giphy.gif)
+    ![2side](https://media.giphy.com/media/YP7yIV97xMT4cLVgFG/giphy.gif)
 
 #### Fase de Ataque
 5. ##### Generar Siete
