@@ -150,7 +150,7 @@ El algoritmo esta dividido en diferentes fases. Se realiza una inspeccion siguie
 
     Ademas, el algoritmo cuenta con movimientos predisenados para provocar al humano colocar pieza alli donde el algoritmo necesita altura. Por ejemplo, como se puede apreciar en la siguiente imagen, coloca una ficha extra en la superior izquierda (columna D) para provocar al humano bloquear la diagonal hacia abajo y asi conseguir dibujar la diagonal del siete.
 
-    ![siete](https://media.giphy.com/media/PkiulMWXPcfSjgpEH3/giphy.gif)
+    ![siete](https://media.giphy.com/media/W36gHCt6P4zceq87KC/giphy.gif)
     
 
 6. ##### Generar Siete Invertido
