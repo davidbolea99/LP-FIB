@@ -4,7 +4,6 @@ import Data.Char
 import Data.Map (Map)
 import qualified Data.Map as Map
 
------------------------ Representacion del mundo ------------------------
 
 {-|
 El tipo de dato Player representa los dos tipos de fichas que se pueden introducir en el tablero.
@@ -13,19 +12,14 @@ En caso de jugar contra la CPU, el usuario llevara la X y la CPU el O.
 data Player = X | O
     deriving (Bounded, Enum, Eq, Ord, Show)
 
-{-|
-Funcion que dado un jugador, te retorna su oponente.
--}
-oponent :: Player -> Player
-oponent X = O
-oponent O = X
-
+---------------------------------------------------------------------------------------------------------------
 {-|
 Tipo de razonamiento asociado al segundo jugador (CPU). En caso de jugar en modo de dos jugadores,
 entonces se selecciona NONE como sistema de razonamiento, ya que este no se va a usar.
 -}
 data AI = RANDOM | GREEDY | SMART | NONE
 
+---------------------------------------------------------------------------------------------------------------
 {-|
 La estructura de datos Board representa el tablero sobre el que se juega. Cada elemento de la
 estructura representa:
@@ -36,6 +30,8 @@ estructura representa:
                 con las coordenadas (i,j) donde se localiza la celta, y el valor es el Player presente,
                 o bien X, o bien O. Cabe destacar que este solo contiene las celdas con un jugador presente.
 -}
+
+---------------------------------------------------------------------------------------------------------------
 data Board = Board
     {
         heigth  :: Int,
@@ -44,6 +40,7 @@ data Board = Board
         cells   :: Map (Int, Int) Player
     }
 
+---------------------------------------------------------------------------------------------------------------
 {-|
 Instanciacion de la funcion show para la estructura de datos que representa el tablero.
 -}
@@ -61,7 +58,6 @@ instance Show Board where
             colSeparator = intercalate " | " . map (\x -> [x])
 
 ---------------------------------------------------------------------------------------------------------------
-
 {-|
 Funcion main del juego. Esta escribe la presentacion, recibe los datos necesarios para empezar la partida:
 tamano del tablero, numero de jugadores y tipo de IA (si es necesario). Posteriormente llama a la funcion
@@ -91,9 +87,7 @@ main = do
         winner <- loop initial_board ai list_of_moves
         end_game 1 winner
 
-
 ---------------------------------------------------------------------------------------------------------------
-
 {-|
 Loop principal del juego. Este recibe, a cada ronda, el tablero actual, el nivel de inteligencia de la cpu, y
 una lista de funciones que encapsulan cada uno de los movimientos*. Esta funcion se va llamando a si misma
@@ -268,15 +262,15 @@ Funcion que retorna una tripleta (q2,q3,q4) donde q_i es la cantidad de lineas p
 fichas consecutivas de un player p, en un tablero board.
 -}
 heuristic :: Player -> Board  -> Int
-heuristic p board = q4 * value4 + q3 * value3 + q2 * value2
+heuristic p board
+    | some_line_of p 4 board              = 10000000
+    | some_line_of (oponent p) 4 board    = -10000000
+    | otherwise                     = q4 * value4 + q3 * value3 + q2 * value2
     where
-        (q2,q3,q4) = how_many_potential_lines_of_each_length p board
-        value2 = 2
-        value3 = 20
-        value4 = 100
+        (q2,q3,q4)             = how_many_potential_lines_of_each_length p board
+        (value2,value3,value4) = (5,100,10000)
 
 ---------------------------------------------------------------------------------------------------------------
-
 {-|
 Funcion que retorna una tripleta (q2,q3,q4) donde q_i es la cantidad de lineas potenciales de llegar a 4 de i
 fichas consecutivas de un player p, en un tablero board.
@@ -331,7 +325,7 @@ how_many_potential_lines_of_each_length p board = suma_tripletas [count_h, count
 
 ---------------------------------------------------------------------------------------------------------------
 {-|
-
+Funcion que retorna una posicion en la que tirar ficha para aplicar la estrategia del 7.
 -}
 build_a_seven :: Player -> Board -> [Int]
 build_a_seven p board@(Board heigth width tops _)
@@ -376,6 +370,10 @@ build_a_seven p board@(Board heigth width tops _)
         space_to_win :: (Int,Int) -> Bool
         space_to_win (i,j) = is_empty (get (i-2,j+3) board)
 
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna una posicion en la que tirar ficha para aplicar la estrategia del 7 invertido.
+-}        
 build_a_seven_inverted :: Player -> Board -> [Int]
 build_a_seven_inverted p board@(Board heigth width tops _)
     | there_is_already_a_seven  = cols_to_push
@@ -426,6 +424,12 @@ build_a_seven_inverted p board@(Board heigth width tops _)
         not_empty (Just _) = True
         not_empty _ = False
 
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que retorna la columna que hay que bloquear si hay peligro de que el oponente genere una estructura ganadora
+que consiste en generar una linea de dos fichas, acompanada de 3 huecos, de forma que en la siguiente tirada, no puedas
+bloquear ambos lados:  --XX- | -XX-- ==> -XXX- (situacion no bloqueable)
+-}  
 block_2side_free :: Player -> Board -> [Int]
 block_2side_free p board@(Board heigth width tops _) = [j | i <- [0..(heigth-1)], j <- [0..(width-1)], tops!!j == i, check_2side_free (i,j)]
         where
@@ -450,10 +454,18 @@ block_2side_free p board@(Board heigth width tops _) = [j | i <- [0..(heigth-1)]
                             next2_of_p = (get (i+1,j+1) board) == Just p && (get (i+2,j+2) board) == Just p
                             empty1     = is_empty (get (i+3,j+3) board)
                             empty2     = ((i+1) < heigth && (j-1) >= 0 && (is_empty (get (i+1,j-1) board))) || ((i+4) < heigth && (j+4) < width && (is_empty (get (i+4,j+4) board)))
-                    
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un Maybe Player retorna True si este es Nothing y Falso en caso contrario.
+-} 
 is_empty :: Maybe Player -> Bool
 is_empty m = not $ not_empty m
 
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un Maybe Player retorna True si hay algun jugador y Falso si es Nothing.
+-} 
 not_empty :: Maybe Player -> Bool
 not_empty (Just _) = True
 not_empty _ = False
@@ -495,30 +507,17 @@ ai_move GREEDY board@(Board heigth width tops _)
         cpu_line_of_2 = [ move | ((c2,c3,c4),move) <- cpu_moves, c2 > t2]
 ai_move SMART board@(Board heigth width _ _)
     | first_2_rounds                = return $ head $ this_allowed_moves
-    | could $ win_in 1              = do
-        putStrLn $ "\nWin in 1 ... \n"
-        return $ head $ win_in 1
-    | could $ avoid_losing_in 1     = do
-        putStrLn $ "\nAvoid losing in 1 ... \n"
-        return $ head $ avoid_losing_in 1
-    | could $ avoid_losing_in 2     = do
-        putStrLn $ "\nAvoid losing in 2 ... \n"
-        return $ head $ avoid_losing_in 2
-    | could $ go_to_block_2side     = do
-        putStrLn $ "\nBlocking 2side ... \n"
-        return $ head $ go_to_block_2side
-    | could $ go_for_seven          = do
-            putStrLn $ "\nBuild a seven ... \n"
-            return $ head $ go_for_seven
-    | could $ go_for_seven_inverted = do
-            putStrLn $ "\nBuild an inverted seven ... \n"
-            return $ head $ go_for_seven_inverted
-    | otherwise                     = do
-        putStrLn $ "\nComputing ... \n"
-        return go_for_the_best
+    | could $ win_in 1              = return $ head $ win_in 1
+    | could $ avoid_losing_in 1     = return $ head $ avoid_losing_in 1
+    | could $ avoid_losing_in 2     = return $ head $ avoid_losing_in 2
+    | could $ go_to_block_2side     = return $ head $ go_to_block_2side
+    | could $ go_for_seven          = return $ head $ go_for_seven
+    | could $ go_for_seven_inverted = return $ head $ go_for_seven_inverted
+    | otherwise                     = return $ minimax
     where
-        (past,left) = game_round board
-        first_2_rounds = past < 2
+        (past,left)         = game_round board
+        first_2_rounds      = past < 2
+        this_allowed_moves  = allowed_moves O board
 
         go_to_block_2side = block_moves \\ (block_moves \\ this_allowed_moves)
             where block_moves = (block_2side_free X board)
@@ -528,28 +527,23 @@ ai_move SMART board@(Board heigth width _ _)
         
         go_for_seven_inverted = seven_inverted_moves \\ (seven_inverted_moves \\ this_allowed_moves)
             where seven_inverted_moves = (build_a_seven_inverted O board)
-        
-        go_for_the_best = choose_the_best_move
 
-        this_allowed_moves = allowed_moves O board
-
-        choose_the_best_move = choose_the_best_move' O left board--(minimum [left,7]) board
+        minimax :: Int
+        minimax = snd $ maximum [((heuristic_rec move),move) | move <- (allowed_moves O board)]
             where
-                choose_the_best_move' :: Player -> Int -> Board -> Int
-                choose_the_best_move' curr_p step board'
-                    | step == 1         = best_move
-                    | otherwise         = choose_the_best_move' next_p (step - 1) (put_piece curr_p best_move board')
+                heuristic_rec move = choose_the_best_move' O (min left 3) (put_piece O move board) True
+                choose_the_best_move' curr_p step board' maximize
+                    | step == 0         = (heuristic curr_p board')
+                    | win               =  10000000
+                    | lose              = -10000000
+                    | maximize          = if could list then maximum list else -10000000
+                    | otherwise         = if could list then minimum list else  10000000
                     where
-                        (_,best_move)
-                            | could $ moves1 = maximum moves1
-                            | could $ moves2 = maximum moves2
-                        moves1              = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (allowed_moves curr_p board') ]
-                        moves2              = [ ((evaluate_curr move) - (evaluate_opo move), move) | move <- (possible_moves board')       ]
-                        evaluate_curr move  = heuristic curr_p (newBoard move)
-                        evaluate_opo  move  = heuristic next_p (newBoard move)
-                        newBoard move       = put_piece curr_p move board'
-                        next_p              = oponent curr_p
-        
+                        win         = some_line_of curr_p 4 board'
+                        lose        = some_line_of (oponent curr_p) 4 board'
+                        list        = [ value move | move <- (allowed_moves curr_p board') ]                            
+                        value move  = choose_the_best_move' (oponent curr_p) (step - 1) (put_piece curr_p move board') (not maximize)
+
         win_in :: Int -> [Int]
         win_in n = win_in_board (2*n - 1) O O board
 
@@ -565,8 +559,7 @@ ai_move SMART board@(Board heigth width _ _)
                 winner_win move     = some_line_of winner           4 (newBoard move)
                 oponent_win move    = some_line_of (oponent winner) 4 (newBoard move)
                 newBoard move       = put_piece curr_p move board'
-
-                
+           
 ---------------------------------------------------------------------------------------------------------------
 {-|
 Funcion que dado un tablero board, y un jugador p, te retorna las posiciones donde p puede tirar ficha sin provocar
@@ -834,3 +827,11 @@ estar envueltos en tuplas.
 tuples2list :: [(a,a)] -> [a]
 tuples2list [] = []
 tuples2list ((x, y) : xs) = x : y : (tuples2list xs)
+
+---------------------------------------------------------------------------------------------------------------
+{-|
+Funcion que dado un jugador, te retorna su oponente.
+-}
+oponent :: Player -> Player
+oponent X = O
+oponent O = X
