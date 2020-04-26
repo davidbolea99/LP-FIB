@@ -149,7 +149,7 @@ El algoritmo esta dividido en diferentes fases. Se realiza una inspeccion siguie
     El algoritmo busca todos los puntos desde los que puede dibujar un 7, y por orden de distancia al mismo (entendiendo por distancia, el numero de fichas restantes necesarias para dibujarlo), intenta dibujar el que requiere menos movimientos.
 
     Ademas, el algoritmo cuenta con movimientos predisenados para provocar al humano colocar pieza alli donde el algoritmo necesita altura. Por ejemplo, como se puede apreciar en la siguiente imagen, coloca una ficha extra en la superior izquierda (columna D) para provocar al humano bloquear la diagonal hacia abajo y asi conseguir dibujar la diagonal del siete.
-
+    ![](https://media.giphy.com/media/PkiulMWXPcfSjgpEH3/giphy.gif)
     <img src="https://media.giphy.com/media/PkiulMWXPcfSjgpEH3/giphy.gif" width="250" height="250">
 
 6. ##### Generar Siete Invertido
