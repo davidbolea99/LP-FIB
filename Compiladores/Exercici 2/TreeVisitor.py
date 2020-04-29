@@ -12,17 +12,23 @@ class TreeVisitor(ExprVisitor):
 
     def visitExpr(self, ctx:ExprParser.ExprContext):
         
-        if ctx.getChildCount() == 1:
-            n = next(ctx.getChildren())
-            print("  " * self.nivell +
+        l = [n for n in ctx.getChildren()]
+
+        # Si solo hay un nodo, este es un numero
+        if len(l) == 1: 
+            n = l[0]
+            print("| " * self.nivell +
                   ExprParser.symbolicNames[n.getSymbol().type] +
                   '(' +n.getText() + ')')
             self.nivell -= 1
         
-        elif ctx.getChildCount() == 3:
-            print('  ' *  self.nivell + self.visit(ctx.op(1)))
+        elif len(l) == 3:
+            left = l[0]
+            op = l[1]
+            right = l[2]
+            print('| ' *  self.nivell + '(' + op.getText() + ')')
             self.nivell += 1
-            self.visit(ctx.expr(0))
+            self.visit(left)
             self.nivell += 1
-            self.visit(ctx.expr(1))
-            self.nivell += 1
+            self.visit(right)
+            self.nivell -= 1
