@@ -16,7 +16,7 @@ public class ExprLexer extends Lexer {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, MUL=2, DIV=3, SUM=4, SUB=5, NUM=6, WS=7;
+		POW=1, MUL=2, DIV=3, SUM=4, SUB=5, NUM=6, WS=7;
 	public static String[] channelNames = {
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
 	};
@@ -26,14 +26,14 @@ public class ExprLexer extends Lexer {
 	};
 
 	public static final String[] ruleNames = {
-		"T__0", "MUL", "DIV", "SUM", "SUB", "NUM", "WS"
+		"POW", "MUL", "DIV", "SUM", "SUB", "NUM", "WS"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
 		null, "'^'", "'*'", "'/'", "'+'", "'-'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
-		null, null, "MUL", "DIV", "SUM", "SUB", "NUM", "WS"
+		null, "POW", "MUL", "DIV", "SUM", "SUB", "NUM", "WS"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 

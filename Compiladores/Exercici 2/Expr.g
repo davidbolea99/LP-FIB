@@ -3,14 +3,21 @@ grammar Expr; //
 root : expr EOF ;
 
 expr :
-      <assoc=right> expr '^' expr
-    | expr MUL expr
-    | expr DIV expr
-    | expr SUM expr
-    | expr SUB expr
+      <assoc=right> expr powop expr
+    | expr op expr
     | NUM
     ;
 
+powop: POW;
+
+op : 
+    MUL
+  | DIV
+  | SUM
+  | SUB
+;
+
+POW : '^';
 MUL : '*';
 DIV : '/';
 SUM : '+';
